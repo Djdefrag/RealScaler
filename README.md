@@ -82,3 +82,7 @@ ReSR.Scaler is completely written in Python, from backend to frontend. External 
 - [ ] Filenames with non-latin symbols (for example kangy, cyrillic etc.) not supported - [Temp solution] rename files like "image" or "video"
 - [ ] When running ReSR.Scaler as Administrator, drag&drop is not working
 
+### Examples.
+![teaser](https://user-images.githubusercontent.com/32263112/202862469-ef70b5cc-3a23-496d-b4ae-59eb7fbd5a32.jpg)
+
+
