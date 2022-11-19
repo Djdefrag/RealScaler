@@ -80,5 +80,5 @@ ReSR.Scaler is completely written in Python, from backend to frontend. External 
 - [x] Windows10 - the app starts with white colored navbar instead of dark
 - [x] Upscaling multiple images doesn't free GPU Vram, so the it is very likely that the process will fail when the gpu memory fills up
 - [ ] Filenames with non-latin symbols (for example kangy, cyrillic etc.) not supported - [Temp solution] rename files like "image" or "video"
-- [ ] When running QualityScaler as Administrator, drag&drop is not working
+- [ ] When running ReSR.Scaler as Administrator, drag&drop is not working
 
