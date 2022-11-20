@@ -47,13 +47,6 @@ ReSR.Scaler is completely written in Python, from backend to frontend. External 
     - [ ] any NVIDIA >=  GTX 600 series
 - [ ] CPU [works without GPU, but is very slow]
 
-## My testing PC.
-- [ ] Windows 10 ReviOS
-- [ ] CPU Ryzen 5600G
-- [ ] RAM 16Gb
-- [ ] GPU Nvidia 1660
-- [ ] STORAGE 1 Sata 120Gb SSD, 1 NVME 500Gb SSD
-
 ## Features.
 
 - [x] Easy to use GUI
