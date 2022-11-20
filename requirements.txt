@@ -1,0 +1,16 @@
+#AI
+opencv-python-headless
+opencv-contrib-python-headless
+pytorch-directml
+
+#UTILS
+wheel
+python-tkdnd
+ttkwidgets
+pyinstaller
+pyinstaller-hooks-contrib
+split_image
+pywin32
+moviepy
+win32mica
+sv_ttk==1.0
