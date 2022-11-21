@@ -78,6 +78,9 @@ ReSR.Scaler is completely written in Python, from backend to frontend. External 
 ### Examples.
 ![teaser](https://user-images.githubusercontent.com/32263112/202862469-ef70b5cc-3a23-496d-b4ae-59eb7fbd5a32.jpg)
 
-![ezgif com-gif-maker](https://user-images.githubusercontent.com/32263112/202901817-266c7333-8939-462d-bd70-51617e4e9aee.gif)
+![test](https://user-images.githubusercontent.com/32263112/203075208-6ce67966-b006-4bec-a425-5eef5d398965.png)
 
-![ezgif com-gif-maker (1)](https://user-images.githubusercontent.com/32263112/202902216-4ed5e87c-338f-452d-8d0c-f318ab912e31.gif)
+![test2](https://user-images.githubusercontent.com/32263112/203075813-3c5b83d3-31e1-47e6-9993-24fc885a3ed9.png)
+
+
+
