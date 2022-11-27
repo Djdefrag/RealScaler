@@ -11,6 +11,12 @@
     <img src="https://user-images.githubusercontent.com/32263112/202846779-fb3e26a3-de58-4266-a21f-5697236bc96c.PNG"> </a> 
 </div>
 
+
+## Other AI projects.🤓
+
+https://github.com/Djdefrag/QualityScaler / QualityScaler - image/video deeplearning upscaler with any GPU (BSRGAN/Pytorch)
+
+
 ## No Watermarks ✨
 To avoid watermarks leave a tip here: https://jangystudio.itch.io/resr.scaler ❤
 
