@@ -13,6 +13,7 @@ import time
 import tkinter as tk
 import tkinter.font as tkFont
 import warnings
+import itertools
 import webbrowser
 from itertools import repeat
 from timeit import default_timer as timer
@@ -33,8 +34,8 @@ from PIL import Image, ImageDraw, ImageFont
 from split_image import reverse_split, split_image
 from win32mica import MICAMODE, ApplyMica
 
-pay      = True
-version  = "v. 6.0"
+pay      = False
+version  = "v. 7.0"
 
 if not pay:
     version = version + ".f"
@@ -42,24 +43,31 @@ if not pay:
 global app_name
 app_name = "ReSR.Scaler"
 
-windows_subversion    = int(platform.version().split('.')[2])
-
 image_path            = "no file"
 AI_model              = "RealESRGAN_x4plus"
-device                = "dml"
+denoise_strength      = 1
+
+device                = "dml:0"
 input_video_path      = ""
-tiles_resolution      = 700
+target_file_extension = ".png"
+half_precision        = True
 single_file           = False
 multiple_files        = False
 video_files           = False
 multi_img_list        = []
 video_frames_list     = []
 video_frames_upscaled_list = []
-target_file_extension = ".png"
-half_precision        = True
-denoise_strength      = 1
-multiplier_num_tiles  = 3
+device_list           = []
+default_vram_limiter  = 8
+multiplier_num_tiles  = 2
+cpu_number            = 4
+windows_subversion    = int(platform.version().split('.')[2])
 resize_algorithm      = Image.LINEAR
+compatible_gpus       = torch.dml.device_count()
+
+if compatible_gpus == 1: device_list.append('GPU')
+else: 
+    for index in range(compatible_gpus): device_list.append('GPU ' + str(index + 1))
 
 paypalme           = "https://www.paypal.com/paypalme/jjstd/5"
 githubme           = "https://github.com/Djdefrag/ReSR.Scaler"
@@ -256,7 +264,7 @@ def resize_image(image_path, resize_factor):
         img_text = ImageDraw.Draw(resized_image)
         img_text.text((20, 20), 
                         "Upscaled with " + app_name 
-                        + "\To avoid watermarks leave a tip here:"
+                        + "\nTo avoid watermarks leave a tip here:"
                         + "\n" + itchme , 
                         font = font, 
                         fill = (250, 250, 250))
@@ -363,7 +371,7 @@ def resize_frame(image_path, new_width, new_height, max_height_or_width):
         img_text = ImageDraw.Draw(resized_image)
         img_text.text((20, 20), 
                         "Upscaled with " + app_name 
-                        + "\To avoid watermarks leave a tip here:"
+                        + "\nTo avoid watermarks leave a tip here:"
                         + "\n" + itchme , 
                         font = font, 
                         fill = (250, 250, 250))
@@ -372,7 +380,6 @@ def resize_frame(image_path, new_width, new_height, max_height_or_width):
 
 def resize_frame_list(image_list, resize_factor):
     downscaled_images = []
-    how_much_images = len(image_list)    
 
     old_image = Image.open(image_list[1])
     new_width, new_height = old_image.size
@@ -381,18 +388,15 @@ def resize_frame_list(image_list, resize_factor):
 
     max_height_or_width = int(max(new_height, new_width))
     
-    index = 1
+    with multiprocessing.Pool(cpu_number) as p:
+        p.starmap(resize_frame, zip(image_list, 
+                                    itertools.repeat(new_width), 
+                                    itertools.repeat(new_height), 
+                                    itertools.repeat(max_height_or_width)))
 
     for image in image_list:
-        resized_image_path = image.replace(target_file_extension, 
-                                            "_resized" + target_file_extension)
-        
-        resize_frame(image, new_width, new_height, max_height_or_width)
-        write_in_log_file("Resizing frame " + str(index) + "/" + str(how_much_images)) 
-
+        resized_image_path = image.replace(target_file_extension, "_resized" + target_file_extension)
         downscaled_images.append(resized_image_path)
-
-        index += 1
 
     return downscaled_images
 
@@ -1128,11 +1132,323 @@ class SRVGGNetCompact(nn.Module):
         return out
 
 
-# ------------------ /Neural Net related ------------------
+# ------------------ /AI related ------------------
 
 
 # ----------------------- Core ------------------------
 
+def thread_check_steps_for_images( not_used_var, not_used_var2 ):
+    time.sleep(3)
+    try:
+        while True:
+            step = read_log_file()
+            if "Upscale completed" in step or "Error while upscaling" in step or "Stopped upscaling" in step:
+                
+                if  "Error while upscaling" in step:
+                    info_string.set("Error while upscaling | check .log file")
+                else:
+                    info_string.set(step)
+
+                stop = 1 + "x"
+            info_string.set(step)
+            time.sleep(1)
+    except:
+        place_upscale_button()
+
+def thread_check_steps_for_videos( not_used_var, not_used_var2 ):
+    time.sleep(3)
+    try:
+        while True:
+            step = read_log_file()
+            if "Upscale video completed" in step or "Error while upscaling" in step or "Stopped upscaling" in step:
+                
+                if  "Error while upscaling" in step:
+                    info_string.set("Error while upscaling | check .log file")
+                else:
+                    info_string.set(step)
+
+                stop = 1 + "x"
+            info_string.set(step)
+            time.sleep(1)
+    except:
+        place_upscale_button()
+
+
+def prepare_AI_model(AI_model, device):
+    backend = torch.device(device)
+
+    model_path = find_by_relative_path("AI" + os.sep + AI_model + ".pth")
+
+    dni_weight = None
+
+    if 'RealESRGAN_x4plus' in AI_model: 
+        model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
+        netscale = 4
+    elif 'realesr-general-x4v3' in AI_model: 
+        model = SRVGGNetCompact(num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=32, upscale=4, act_type='prelu')
+        netscale = 4
+        if denoise_strength != 1:
+            wdn_model_path = model_path.replace('realesr-general-x4v3', 'realesr-general-wdn-x4v3')
+            model_path = [model_path, wdn_model_path]
+            dni_weight = [denoise_strength, 1 - denoise_strength]
+
+    model = RealESRGANer( scale = netscale, model_path = model_path, dni_weight = dni_weight,
+                            model = model, tile = 0, tile_pad = 10, pre_pad = 0,
+                            half  = half_precision, gpu_id = None, device = device)
+        
+    return model
+
+def upscale_image_and_save(img, model, result_path, device, tiles_resolution):
+    img_tmp          = cv2.imread(img)
+    image_resolution = max(img_tmp.shape[1], img_tmp.shape[0])
+    num_tiles        = image_resolution/tiles_resolution
+
+    if num_tiles <= 1:
+        with torch.no_grad():
+            img_adapted  = cv2.imread(img, cv2.IMREAD_UNCHANGED)
+            img_upscaled, _ = model.enhance(img_adapted, outscale=4)
+            cv2.imwrite(result_path, img_upscaled)
+    else:
+        num_tiles = round(num_tiles)
+        if (num_tiles % 2) != 0: num_tiles += 1
+        num_tiles = round(num_tiles * multiplier_num_tiles)
+
+        num_tiles_applied = int(num_tiles/2)
+        how_many_tiles = int(pow(num_tiles/2, 2))
+
+        split_image(img, num_tiles_applied, num_tiles_applied, False, should_cleanup = True, should_quiet=True, output_dir=None)
+
+        tiles = []
+        for index in range(how_many_tiles):
+            tiles.append(img.replace(".png", "_" + str(index) + ".png"))
+
+        with torch.no_grad():
+            for tile in tiles:
+                tile_adapted  = cv2.imread(tile, cv2.IMREAD_UNCHANGED)
+                tile_upscaled, _ = model.enhance(tile_adapted, outscale=4)
+                cv2.imwrite(tile, tile_upscaled)
+
+        reverse_split(tiles, num_tiles_applied, num_tiles_applied, result_path, should_cleanup=True, should_quiet=True)
+
+def process_upscale_multiple_images_resrscaler(image_list, AI_model, resize_factor, device, tiles_resolution, target_file_extension):
+    try:
+        start = timer()
+        
+        write_in_log_file('...')
+
+        write_in_log_file('Resizing images...')
+        image_list = convert_image_list(image_list, target_file_extension)
+        image_list, files_to_delete = resize_image_list(image_list, resize_factor)
+
+        how_many_images = len(image_list)
+        done_images     = 0
+
+        write_in_log_file('Upscaling...')
+        for img in image_list:
+            model = prepare_AI_model(AI_model, device)
+            result_path = prepare_output_filename(img, AI_model, target_file_extension)
+            upscale_image_and_save(img, model, 
+                                    result_path, device,    
+                                    tiles_resolution)
+
+            done_images += 1
+            write_in_log_file("Upscaled images " + str(done_images) + "/" + str(how_many_images))
+                
+        write_in_log_file("Upscale completed [" + str(round(timer() - start)) + " sec.]")
+
+        delete_list_of_files(files_to_delete)
+    except Exception as e:
+        write_in_log_file('Error while upscaling' + '\n\n' + str(e)) 
+        import tkinter as tk
+        root = tk.Tk()
+        root.withdraw()
+        tk.messagebox.showerror(title   = 'Error', 
+                                message = 'Upscale failed caused by:\n\n' +
+                                           str(e) + '\n' +
+                                          'Please report the error on Github.com or Itch.io.' +
+                                          '\n\nThank you :)')
+
+def process_upscale_video_frames_resrscaler(input_video_path, AI_model, resize_factor, device, tiles_resolution, target_file_extension):
+    try:
+        start = timer()
+
+        create_temp_dir(app_name + "_temp")
+
+        write_in_log_file('...')
+      
+        write_in_log_file('Extracting video frames...')
+        image_list = extract_frames_from_video(input_video_path)
+        
+        write_in_log_file('Resizing video frames...')
+        image_list  = resize_frame_list(image_list, resize_factor)
+
+        write_in_log_file('Upscaling...')
+        how_many_images = len(image_list)
+        done_images     = 0
+        video_frames_upscaled_list = []
+
+        model = prepare_AI_model(AI_model, device)
+
+        for img in image_list:
+            result_path = prepare_output_filename(img, AI_model, target_file_extension)
+            video_frames_upscaled_list.append(result_path)
+            upscale_image_and_save(img, model, 
+                                    result_path, device,    
+                                    tiles_resolution)
+            done_images += 1
+            write_in_log_file("Upscaled frame " + str(done_images) + "/" + str(how_many_images))
+
+        write_in_log_file("Processing upscaled video...")
+        
+        video_reconstruction_by_frames(input_video_path, video_frames_upscaled_list, AI_model)
+
+        write_in_log_file("Upscale video completed [" + str(round(timer() - start)) + " sec.]")
+
+        create_temp_dir(app_name + "_temp")
+    except Exception as e:
+        write_in_log_file('Error while upscaling' + '\n\n' + str(e)) 
+        import tkinter as tk
+        root = tk.Tk()
+        root.withdraw()
+        tk.messagebox.showerror(title   = 'Error', 
+                                message = 'Upscale failed caused by:\n\n' +
+                                           str(e) + '\n' +
+                                          'Please report the error on Github.com or Itch.io.' +
+                                          '\n\nThank you :)')
+    
+
+# ----------------------- /Core ------------------------
+
+# ---------------------- GUI related ----------------------
+
+
+def upscale_button_command():
+    global image_path
+    global multiple_files
+    global process_upscale
+    global thread_wait
+    global resize_factor
+    global video_frames_list
+    global video_files
+    global video_frames_upscaled_list
+    global input_video_path
+    global device
+    global tiles_resolution
+
+    info_string.set("...")
+
+    if compatible_gpus == 0:
+        tk.messagebox.showerror(title   = 'Error', 
+                                message = 'Sorry, your gpu is not compatible with QualityScaler :(')
+
+    try:
+        resize_factor = int(float(str(selected_resize_factor.get())))
+    except:
+        info_string.set("Resize % must be a numeric value")
+        return
+
+    if resize_factor > 0 and resize_factor <= 100:
+        resize_factor = resize_factor/100
+        pass    
+    else:
+        info_string.set("Resize % must be in range 1 - 100")
+        return
+    
+    try:
+        tiles_resolution = 100 * int(float(str(selected_VRAM_limiter.get())))
+    except:
+        info_string.set("VRAM/RAM value must be a numeric value")
+        return   
+
+    if tiles_resolution > 0:
+        tiles_resolution = 100 * (1 + int(float(str(selected_VRAM_limiter.get()))))    
+    else:
+        info_string.set("VRAM/RAM value must be > 0")
+        return
+
+    if video_files:
+        place_stop_button()
+
+        process_upscale = multiprocessing.Process(target = process_upscale_video_frames_resrscaler,
+                                                  args   = (input_video_path, 
+                                                            AI_model, 
+                                                            resize_factor, 
+                                                            device,
+                                                            tiles_resolution,
+                                                            target_file_extension))
+        process_upscale.start()
+
+        thread_wait = threading.Thread(target = thread_check_steps_for_videos,
+                                       args   = (1, 2), 
+                                       daemon = True)
+        thread_wait.start()
+
+    elif multiple_files:
+        place_stop_button()
+        
+        process_upscale = multiprocessing.Process(target = process_upscale_multiple_images_resrscaler,
+                                                    args   = (multi_img_list, 
+                                                             AI_model, 
+                                                             resize_factor, 
+                                                             device,
+                                                             tiles_resolution,
+                                                             target_file_extension))
+        process_upscale.start()
+
+        thread_wait = threading.Thread(target = thread_check_steps_for_images,
+                                        args   = (1, 2), daemon = True)
+        thread_wait.start()
+
+    elif single_file:
+        place_stop_button()
+
+        process_upscale = multiprocessing.Process(target = process_upscale_multiple_images_resrscaler,
+                                                    args   = (multi_img_list, 
+                                                             AI_model, 
+                                                             resize_factor, 
+                                                             device,
+                                                             tiles_resolution,
+                                                             target_file_extension))
+        process_upscale.start()
+
+        thread_wait = threading.Thread(target = thread_check_steps_for_images,
+                                       args   = (1, 2), daemon = True)
+        thread_wait.start()
+
+    elif "no file" in image_path:
+        info_string.set("No file selected")
+  
+
+
+
+def stop_button_command():
+    global process_upscale
+    process_upscale.terminate()
+    
+    # this will stop thread that check upscaling steps
+    write_in_log_file("Stopped upscaling") 
+
+def drop_event_to_image_list(event):
+    image_list = str(event.data).replace("{", "").replace("}", "")
+
+    for file_type in supported_file_list:
+        image_list = image_list.replace(file_type, file_type+"\n")
+
+    image_list = image_list.split("\n")
+    image_list.pop() 
+
+    return image_list
+
+def drop_event_to_image_list(event):
+    image_list = str(event.data).replace("{", "").replace("}", "")
+
+    for file_type in supported_file_list:
+        image_list = image_list.replace(file_type, file_type+"\n")
+
+    image_list = image_list.split("\n")
+    image_list.pop() 
+
+    return image_list
 
 def file_drop_event(event):
     global image_path
@@ -1250,282 +1566,6 @@ def count_files_dropped(event):
             str(event.data).count(file_type)
 
     return supported_file_dropped_number, not_supported_file_dropped_number, supported_video_dropped_number
-
-def thread_check_steps_for_images( not_used_var, not_used_var2 ):
-    time.sleep(3)
-    try:
-        while True:
-            step = read_log_file()
-            if "Upscale completed" in step or "Error while upscaling" in step or "Stopped upscaling" in step:
-                
-                if  "Error while upscaling" in step:
-                    info_string.set("Error while upscaling | check .log file")
-                else:
-                    info_string.set(step)
-
-                stop = 1 + "x"
-            info_string.set(step)
-            time.sleep(1)
-    except:
-        place_upscale_button()
-
-def thread_check_steps_for_videos( not_used_var, not_used_var2 ):
-    time.sleep(3)
-    try:
-        while True:
-            step = read_log_file()
-            if "Upscale video completed" in step or "Error while upscaling" in step or "Stopped upscaling" in step:
-                
-                if  "Error while upscaling" in step:
-                    info_string.set("Error while upscaling | check .log file")
-                else:
-                    info_string.set(step)
-
-                stop = 1 + "x"
-            info_string.set(step)
-            time.sleep(1)
-    except:
-        place_upscale_button()
-
-def drop_event_to_image_list(event):
-    image_list = str(event.data).replace("{", "").replace("}", "")
-
-    for file_type in supported_file_list:
-        image_list = image_list.replace(file_type, file_type+"\n")
-
-    image_list = image_list.split("\n")
-    image_list.pop() 
-
-    return image_list
-
-def optimize_torch():
-    torch.autograd.set_detect_anomaly(False)
-    torch.autograd.profiler.profile(False)
-    torch.autograd.profiler.emit_nvtx(False)
-
-
-
-def prepare_AI_model(AI_model, device):
-    backend = torch.device(device)
-
-    model_path = find_by_relative_path("AI" + os.sep + AI_model + ".pth")
-
-    dni_weight = None
-
-    if 'RealESRGAN_x4plus' in AI_model: 
-        model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
-        netscale = 4
-    elif 'realesr-general-x4v3' in AI_model: 
-        model = SRVGGNetCompact(num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=32, upscale=4, act_type='prelu')
-        netscale = 4
-        if denoise_strength != 1:
-            wdn_model_path = model_path.replace('realesr-general-x4v3', 'realesr-general-wdn-x4v3')
-            model_path = [model_path, wdn_model_path]
-            dni_weight = [denoise_strength, 1 - denoise_strength]
-
-    model = RealESRGANer( scale = netscale, model_path = model_path, dni_weight = dni_weight,
-                            model = model, tile = 0, tile_pad = 10, pre_pad = 0,
-                            half  = half_precision, gpu_id = None, device = device)
-        
-    return model
-
-def upscale_image_and_save(img, model, result_path, device, tiles_resolution):
-    img_tmp          = cv2.imread(img)
-    image_resolution = max(img_tmp.shape[1], img_tmp.shape[0])
-    num_tiles        = image_resolution/tiles_resolution
-
-    if num_tiles <= 1:
-        with torch.no_grad():
-            img_adapted  = cv2.imread(img, cv2.IMREAD_UNCHANGED)
-            img_upscaled, _ = model.enhance(img_adapted, outscale=4)
-            cv2.imwrite(result_path, img_upscaled)
-    else:
-        num_tiles = round(num_tiles)
-        if (num_tiles % 2) != 0: num_tiles += 1
-        num_tiles = round(num_tiles * multiplier_num_tiles)
-
-        num_tiles_applied = int(num_tiles/2)
-        how_many_tiles = int(pow(num_tiles/2, 2))
-
-        split_image(img, num_tiles_applied, num_tiles_applied, False, should_cleanup = True, should_quiet=True, output_dir=None)
-
-        tiles = []
-        for index in range(how_many_tiles):
-            tiles.append(img.replace(".png", "_" + str(index) + ".png"))
-
-        with torch.no_grad():
-            for tile in tiles:
-                tile_adapted  = cv2.imread(tile, cv2.IMREAD_UNCHANGED)
-                tile_upscaled, _ = model.enhance(tile_adapted, outscale=4)
-                cv2.imwrite(tile, tile_upscaled)
-
-        reverse_split(tiles, num_tiles_applied, num_tiles_applied, result_path, should_cleanup=True, should_quiet=True)
-
-def process_upscale_multiple_images_qualityscaler(image_list, AI_model, resize_factor, device, tiles_resolution, target_file_extension):
-    try:
-        start = timer()
-        
-        write_in_log_file('...')
-
-        optimize_torch()
-
-        write_in_log_file('Resizing images')
-        image_list = convert_image_list(image_list, target_file_extension)
-        image_list, files_to_delete = resize_image_list(image_list, resize_factor)
-
-        how_many_images = len(image_list)
-        done_images     = 0
-
-        write_in_log_file('Upscaling...')
-        for img in image_list:
-            model = prepare_AI_model(AI_model, device)
-            result_path = prepare_output_filename(img, AI_model, target_file_extension)
-            upscale_image_and_save(img, model, 
-                                    result_path, device,    
-                                    tiles_resolution)
-
-            done_images += 1
-            write_in_log_file("Upscaled images " + str(done_images) + "/" + str(how_many_images))
-                
-        write_in_log_file("Upscale completed [" + str(round(timer() - start)) + " sec.]")
-
-        delete_list_of_files(files_to_delete)
-    except Exception as e:
-        write_in_log_file('Error while upscaling' + '\n\n' + str(e)) 
-
-def process_upscale_video_frames_qualityscaler(input_video_path, AI_model, resize_factor, device, tiles_resolution, target_file_extension):
-    try:
-        start = timer()
-
-        create_temp_dir(app_name + "_temp")
-
-        write_in_log_file('...')
-      
-        optimize_torch()
-
-        write_in_log_file('Extracting video frames')
-        image_list = extract_frames_from_video(input_video_path)
-        
-        write_in_log_file('Resizing video frames')
-        image_list  = resize_frame_list(image_list, resize_factor)
-
-        write_in_log_file('Upscaling...')
-        how_many_images = len(image_list)
-        done_images     = 0
-        video_frames_upscaled_list = []
-
-        model = prepare_AI_model(AI_model, device)
-
-        for img in image_list:
-            result_path = prepare_output_filename(img, AI_model, target_file_extension)
-            video_frames_upscaled_list.append(result_path)
-            upscale_image_and_save(img, model, 
-                                    result_path, device,    
-                                    tiles_resolution)
-            done_images += 1
-            write_in_log_file("Upscaled frame " + str(done_images) + "/" + str(how_many_images))
-
-        write_in_log_file("Processing upscaled video")
-        
-        video_reconstruction_by_frames(input_video_path, video_frames_upscaled_list, AI_model)
-
-        write_in_log_file("Upscale video completed [" + str(round(timer() - start)) + " sec.]")
-
-        create_temp_dir(app_name + "_temp")
-    except Exception as e:
-        write_in_log_file('Error while upscaling' + '\n\n' + str(e)) 
-    
-
-# ----------------------- /Core ------------------------
-
-# ---------------------- GUI related ----------------------
-
-
-def upscale_button_command():
-    global image_path
-    global multiple_files
-    global process_upscale
-    global thread_wait
-    global resize_factor
-    global video_frames_list
-    global video_files
-    global video_frames_upscaled_list
-    global input_video_path
-    global device
-
-    try:
-        resize_factor = int(float(str(selected_resize_factor.get())))
-    except:
-        info_string.set("Resize input must be a numeric value")
-        return
-
-    if resize_factor > 0 and resize_factor <= 100:
-        resize_factor = resize_factor/100
-        pass    
-    else:
-        info_string.set("Resize must be in range 1 - 100")
-        return
-
-    info_string.set("...")
-
-    if video_files:
-        place_stop_button()
-
-        process_upscale = multiprocessing.Process(target = process_upscale_video_frames_qualityscaler,
-                                                  args   = (input_video_path, 
-                                                            AI_model, 
-                                                            resize_factor, 
-                                                            device,
-                                                            tiles_resolution,
-                                                            target_file_extension))
-        process_upscale.start()
-
-        thread_wait = threading.Thread(target = thread_check_steps_for_videos,
-                                       args   = (1, 2), 
-                                       daemon = True)
-        thread_wait.start()
-
-    elif multiple_files:
-        place_stop_button()
-        
-        process_upscale = multiprocessing.Process(target = process_upscale_multiple_images_qualityscaler,
-                                                    args   = (multi_img_list, 
-                                                             AI_model, 
-                                                             resize_factor, 
-                                                             device,
-                                                             tiles_resolution,
-                                                             target_file_extension))
-        process_upscale.start()
-
-        thread_wait = threading.Thread(target = thread_check_steps_for_images,
-                                        args   = (1, 2), daemon = True)
-        thread_wait.start()
-
-    elif single_file:
-        place_stop_button()
-
-        process_upscale = multiprocessing.Process(target = process_upscale_multiple_images_qualityscaler,
-                                                    args   = (multi_img_list, 
-                                                             AI_model, 
-                                                             resize_factor, 
-                                                             device,
-                                                             tiles_resolution,
-                                                             target_file_extension))
-        process_upscale.start()
-
-        thread_wait = threading.Thread(target = thread_check_steps_for_images,
-                                       args   = (1, 2), daemon = True)
-        thread_wait.start()
-
-    elif "no file" in image_path:
-        info_string.set("No file selected")
-  
-def stop_button_command():
-    global process_upscale
-    process_upscale.terminate()
-    
-    # this will stop thread that check upscaling steps
-    write_in_log_file("Stopped upscaling") 
 
 def clear_input_variables():
     global image_path
@@ -1786,38 +1826,17 @@ def combobox_AI_selection(event):
 def combobox_backend_selection(event):
     global device
 
-    selected = str(selected_backend.get())
-    if 'gpu' in selected:
-        device = "dml"
-    elif 'cpu' in selected:
-        device = "cpu"
+    selected_option = str(selected_backend.get())
 
-    Combo_box_backend.set('')
-    Combo_box_backend.set(selected)
-
-def combobox_VRAM_selection(event):
-    global tiles_resolution
-
-    selected = str(selected_VRAM.get())
-
-    if 'Minimal(2GB)' == selected:
-        tiles_resolution = 100
-    if 'Medium(4GB)' == selected:
-        tiles_resolution = 300
-    if 'Normal(6GB)' == selected:
-        tiles_resolution = 500
-    if 'High(8GB)' == selected:
-        tiles_resolution = 700
-    if 'Ultra(12GB)' == selected:
-        tiles_resolution = 900
-    if 'Max(>16GB)' == selected:
-        tiles_resolution = 1200
-
-    Combo_box_VRAM.set('')
-    Combo_box_VRAM.set(selected)
-
-
-
+    if selected_option == "GPU": # 1 gpu
+        Combo_box_backend.set('')
+        Combo_box_backend.set(selected_option)
+        device = 'dml:0'
+    else:                        # multiple gpus
+        selected_gpu_number = [int(s) for s in selected_option.split() if s.isdigit()]
+        Combo_box_backend.set('')
+        Combo_box_backend.set(selected_option)
+        device = 'dml:'+str(selected_gpu_number[0]-1)
 
 def place_drag_drop_widget():
     clear_input_variables()
@@ -1861,46 +1880,23 @@ def place_drag_drop_widget():
                          width  = drag_drop_width * 0.50, 
                          height = drag_drop_height * 0.50)
 
-def place_backend_combobox():
+def place_resize_factor_spinbox():
     ft = tkFont.Font(family = default_font,
-                     size   = round(11 * font_scale),
-                     weight = "bold")
-
-    root.option_add("*TCombobox*Listbox*Background", background_color)
-    root.option_add("*TCombobox*Listbox*Foreground", selected_button_color)
-    root.option_add("*TCombobox*Listbox*Font",       ft)
-    root.option_add('*TCombobox*Listbox.Justify',    'center')
-
-    global Combo_box_backend
-    Combo_box_backend = ttk.Combobox(root, 
-                            textvariable = selected_backend, 
-                            justify      = 'center',
-                            foreground   = text_color,
-                            values       = ['GPU', 'CPU'],
-                            state        = 'readonly',
-                            takefocus    = False,
-                            font         = ft)
-    Combo_box_backend.place(x = 50 + left_bar_width/2 - 285/2, 
-                            y = button_3_y, 
-                            width  = 290, 
-                            height = 42)
-    Combo_box_backend.bind('<<ComboboxSelected>>', combobox_backend_selection)
-    Combo_box_backend.set('GPU')
-
-def place_resize_factor_entrybox():
-    ft = tkFont.Font(family = default_font,
-                     size   = round(11 * font_scale),
+                     size   = round(12 * font_scale),
                      weight = "bold")
 
     global Entry_box_resize_factor
-    Entry_box_resize_factor = ttk.Entry(root, 
+    Entry_box_resize_factor = ttk.Spinbox(root,  
+                                        from_     = 1, 
+                                        to        = 100, 
+                                        increment = 1,
                                         textvariable = selected_resize_factor, 
                                         justify      = 'center',
                                         foreground   = text_color,
                                         takefocus    = False,
                                         font         = ft)
     Entry_box_resize_factor.place(x = 50 + left_bar_width/2 - 285/2, 
-                                    y = button_2_y, 
+                                    y = button_3_y, 
                                     width  = 290 * 0.8, 
                                     height = 42)
     Entry_box_resize_factor.insert(0, '70')
@@ -1913,7 +1909,7 @@ def place_resize_factor_entrybox():
                                             weight = "bold"),
                                  foreground = text_color)
     Label_percentage.place(x = left_bar_width/2 + 160, 
-                            y = button_2_y + 2, 
+                            y = button_3_y, 
                             width  = 30, 
                             height = 42)
     
@@ -1922,7 +1918,7 @@ def place_AI_combobox():
                      size   = round(11 * font_scale),
                      weight = "bold")
 
-    models_array = [ 'RealESRGAN_x4plus', 'realesr-general-x4v3 (coming soon)' ]
+    models_array = [ 'BSRGANx2', 'BSRGANx4', 'RealSR_JPEGx4' ]
 
     global Combo_box_AI
     Combo_box_AI = ttk.Combobox(root, 
@@ -1940,40 +1936,73 @@ def place_AI_combobox():
     Combo_box_AI.bind('<<ComboboxSelected>>', combobox_AI_selection)
     Combo_box_AI.set(AI_model)
 
-def place_VRAM_combobox():
+def place_backend_title():
+    Upscale_backend_selection_title = ttk.Label(root, 
+                                                font = (default_font, round(12 * font_scale), "bold"), 
+                                                foreground = text_color, 
+                                                justify    = 'left', 
+                                        	    relief     = 'flat', 
+                                                text       = " ⍚  AI backend ")
+    Upscale_backend_selection_title.place(x = left_bar_width/2 - 115,
+                                          y = button_2_y - 45,
+                                          width  = 200,
+                                          height = 40)
+
+def place_backend_combobox():
     ft = tkFont.Font(family = default_font,
                      size   = round(11 * font_scale),
                      weight = "bold")
 
-    global Combo_box_VRAM
-    Combo_box_VRAM = ttk.Combobox(root, 
-                            textvariable = selected_VRAM, 
+    global Combo_box_backend
+    Combo_box_backend = ttk.Combobox(root, 
+                            textvariable = selected_backend, 
                             justify      = 'center',
                             foreground   = text_color,
-                            values       = ['Minimal(2GB)', 'Medium(4GB)', 
-                                            'Normal(6GB)', 'High(8GB)', 
-                                            'Ultra(12GB)', 'Max(>16GB)' ],
+                            values       = device_list,
                             state        = 'readonly',
                             takefocus    = False,
                             font         = ft)
-    Combo_box_VRAM.place(x = 50 + left_bar_width/2 - 285/2, 
-                         y = button_4_y, 
-                         width  = 290, 
-                         height = 42)
-    Combo_box_VRAM.bind('<<ComboboxSelected>>', combobox_VRAM_selection)
+    Combo_box_backend.place(x = 50 + left_bar_width/2 - 285/2, 
+                            y = button_2_y, 
+                            width  = 290, 
+                            height = 42)
+    Combo_box_backend.bind('<<ComboboxSelected>>', combobox_backend_selection)
+    Combo_box_backend.set(device_list[0])
 
-    if tiles_resolution == 100:
-        Combo_box_VRAM.set('Minimal(2GB)')
-    if tiles_resolution == 300:
-        Combo_box_VRAM.set('Medium(4GB)')
-    if tiles_resolution == 500:
-        Combo_box_VRAM.set('Normal(6GB)')
-    if tiles_resolution == 700:
-        Combo_box_VRAM.set('High(8GB)')
-    if tiles_resolution == 900:
-        Combo_box_VRAM.set('Ultra(12GB)')
-    if tiles_resolution == 1200:
-        Combo_box_VRAM.set('Max(>16GB)')
+def place_VRAM_spinbox():
+    ft = tkFont.Font(family = default_font,
+                     size   = round(12 * font_scale),
+                     weight = "bold")
+
+    global Entry_box_VRAM
+    Entry_box_VRAM = ttk.Spinbox(root,  
+                                from_     = 0, 
+                                to        = 100, 
+                                increment = 1,
+                                textvariable = selected_VRAM_limiter, 
+                                justify      = 'center',
+                                foreground   = text_color,
+                                takefocus    = False,
+                                font         = ft)
+    Entry_box_VRAM.place(x = 50 + left_bar_width/2 - 285/2, 
+                        y = button_4_y, 
+                        width  = 290 * 0.8, 
+                        height = 42)
+    Entry_box_VRAM.insert(0, str(default_vram_limiter))
+
+    ft = tkFont.Font(family = default_font,
+                     size   = round(13 * font_scale),
+                     weight = "bold")
+
+    Label_GB = ttk.Label(root,
+                        text       = "Gb",
+                        justify    = "center",
+                        font       = ft,
+                        foreground = text_color)
+    Label_GB.place(x = left_bar_width/2 + 160, 
+                   y = button_4_y, 
+                   width  = 30, 
+                   height = 42)
 
 def place_clean_button():
     global clear_icon
@@ -2010,10 +2039,10 @@ def place_left_bar():
 def place_app_title():
     Title = ttk.Label(root, 
                       font = (default_font, round(20 * font_scale), "bold"),
-                      foreground = "#E97451", 
+                      foreground = "#DA70D6", 
                       anchor     = 'w', 
                       text       = app_name)
-    Title.place(x = 50 + 50,
+    Title.place(x = 50 + 35,
                 y = 70,
                 width  = 300,
                 height = 55)
@@ -2100,21 +2129,9 @@ def place_resize_factor_title():
                                             relief     = 'flat', 
                                             text       = " ⤮  Resize before upscaling ")
     Upscale_fact_selection_title.place(x = left_bar_width/2 - 115,
-                                        y = button_2_y - 45,
+                                        y = button_3_y - 45,
                                         width  = 300,
                                         height = 40)
-
-def place_backend_title():
-    Upscale_backend_selection_title = ttk.Label(root, 
-                                                font = (default_font, round(12 * font_scale), "bold"), 
-                                                foreground = text_color, 
-                                                justify    = 'left', 
-                                        	    relief     = 'flat', 
-                                                text       = " ⍚  AI backend ")
-    Upscale_backend_selection_title.place(x = left_bar_width/2 - 115,
-                                          y = button_3_y - 45,
-                                          width  = 200,
-                                          height = 40)
 
 def place_VRAM_title():
     IA_selection_title = ttk.Label(root, 
@@ -2122,7 +2139,7 @@ def place_VRAM_title():
                                    foreground = text_color, 
                                    justify    = 'left', 
                                    relief     = 'flat', 
-                                   text       = " ⋈  Gpu Vram + PC Ram ")
+                                   text       = " ⋈  Gpu Vram / PC Ram ")
     IA_selection_title.place(x = left_bar_width/2 - 115,
                              y = button_4_y - 45,
                              width  = 250,
@@ -2141,8 +2158,6 @@ def place_message_box():
                         y = 615,
                         width  = left_bar_width,
                         height = 30)
-
-    info_string.set("...")
 
 
 # ---------------------- /GUI related ----------------------
@@ -2200,11 +2215,12 @@ class App:
         place_AI_models_title()          # AI models title
         place_AI_combobox()              # AI models widget
         place_resize_factor_title()      # Upscale factor title
-        place_resize_factor_entrybox()   # Upscale factor widget
-        place_backend_title()            # Backend title
-        place_backend_combobox()         # Backend widget
+        place_resize_factor_spinbox()   # Upscale factor widget
         place_VRAM_title()               # VRAM title
-        place_VRAM_combobox()            # VRAM widget
+        place_VRAM_spinbox()            # VRAM widget
+        place_backend_title()            # Backend title
+
+        place_backend_combobox()         # Backend widget
         place_message_box()              # Message box
         place_upscale_button()           # Upscale button
         place_drag_drop_widget()         # Drag&Drop widget
@@ -2217,8 +2233,8 @@ if __name__ == "__main__":
     info_string = tk.StringVar()
     selected_AI = tk.StringVar()
     selected_resize_factor = tk.StringVar()
+    selected_VRAM_limiter  = tk.StringVar()
     selected_backend = tk.StringVar()
-    selected_VRAM    = tk.StringVar()
 
     app = App(root)
     root.update()
