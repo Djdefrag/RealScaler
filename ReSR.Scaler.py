@@ -35,7 +35,7 @@ from split_image import reverse_split, split_image
 from win32mica import MICAMODE, ApplyMica
 
 pay      = False
-version  = "v. 7.0"
+version  = "v. 7.1"
 
 if not pay:
     version = version + ".f"
@@ -1918,7 +1918,7 @@ def place_AI_combobox():
                      size   = round(11 * font_scale),
                      weight = "bold")
 
-    models_array = [ 'BSRGANx2', 'BSRGANx4', 'RealSR_JPEGx4' ]
+    models_array = [ 'RealESRGAN_x4plus', 'realesr-general-x4v3 (coming soon)' ]
 
     global Combo_box_AI
     Combo_box_AI = ttk.Combobox(root, 
