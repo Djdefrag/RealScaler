@@ -1,7 +1,7 @@
 <div align="center">
     <br>
     <img src="https://user-images.githubusercontent.com/32263112/202846672-027bc15c-8db1-424c-b241-5b466e66c66e.png" width="175"> </a> 
-    <br><br> ReSR.Scaler - image/video deeplearning upscaling for any GPU <br><br>
+    <br><br> ReSRScaler - image/video deeplearning upscaling for any GPU <br><br>
     <a href="https://jangystudio.itch.io/resr.scaler">
          <img src="https://user-images.githubusercontent.com/86362423/162710522-c40c4f39-a6b9-48bc-84bc-1c6b78319f01.png" width="200">
     </a>
@@ -26,7 +26,7 @@ Real-ESRGAN - https://github.com/xinntao/Real-ESRGAN
 
 ## How is made. 🛠
 
-ReSR.Scaler is completely written in Python, from backend to frontend. External packages are:
+ReSRScaler is completely written in Python, from backend to frontend. External packages are:
 - [ ] AI  -> Pytorch-directml
 - [ ] GUI -> Tkinter / Tkdnd / Sv_ttk
 - [ ] Image/video -> OpenCV / Moviepy
@@ -40,9 +40,9 @@ ReSR.Scaler is completely written in Python, from backend to frontend. External 
  DirectX runtime: https://www.microsoft.com/en-us/download/details.aspx?id=8109
  
 #### Installation:
- 1. download the ReSR.Scaler release .zip
+ 1. download the ReSRScaler release .zip
  2. unzip using 7zip or similar
- 3. execute ReSR.Scaler.exe in the directory
+ 3. execute ReSRScaler.exe in the directory
 
 ## Requirements. 🤓
 - [ ] Windows 11 / Windows 10
@@ -74,6 +74,7 @@ ReSR.Scaler is completely written in Python, from backend to frontend. External 
 - [ ] Update libraries 
     - [ ] Python 3.10 (expecting ~10% more performance) 
     - [ ] Python 3.11 (expecting ~30% more performance)
+    - [ ] pytorch-directml
 
 ## Known bugs.
 - [x] Windows10 - the app starts with white colored navbar instead of dark
