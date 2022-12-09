@@ -2,7 +2,7 @@
     <br>
     <img src="https://user-images.githubusercontent.com/32263112/202846672-027bc15c-8db1-424c-b241-5b466e66c66e.png" width="175"> </a> 
     <br><br> RealESRScaler - image/video deeplearning upscaling for any GPU <br><br>
-    <a href="https://jangystudio.itch.io/realesrcaler">
+    <a href="https://jangystudio.itch.io/realesrscaler">
          <img src="https://user-images.githubusercontent.com/86362423/162710522-c40c4f39-a6b9-48bc-84bc-1c6b78319f01.png" width="200">
     </a>
 </div>
