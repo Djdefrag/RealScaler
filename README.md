@@ -95,4 +95,5 @@ ReSRScaler is completely written in Python, from backend to frontend. External p
 
 ![test5](https://user-images.githubusercontent.com/32263112/203338133-0d0945f1-0129-4b36-8801-1510cf8892b8.png)
 
+![a](https://user-images.githubusercontent.com/32263112/206723952-3f3110c9-9328-4bcc-94e0-8aaec0279eeb.png)
 
