@@ -1,8 +1,8 @@
 <div align="center">
     <br>
     <img src="https://user-images.githubusercontent.com/32263112/202846672-027bc15c-8db1-424c-b241-5b466e66c66e.png" width="175"> </a> 
-    <br><br> ReSRScaler - image/video deeplearning upscaling for any GPU <br><br>
-    <a href="https://jangystudio.itch.io/resr.scaler">
+    <br><br> RealESRScaler - image/video deeplearning upscaling for any GPU <br><br>
+    <a href="https://jangystudio.itch.io/realesrcaler">
          <img src="https://user-images.githubusercontent.com/86362423/162710522-c40c4f39-a6b9-48bc-84bc-1c6b78319f01.png" width="200">
     </a>
 </div>
@@ -17,16 +17,13 @@
 https://github.com/Djdefrag/QualityScaler / QualityScaler - image/video deeplearning upscaler with any GPU (BSRGAN/Pytorch)
 
 
-## No Watermarks ✨
-To avoid watermarks leave a tip here: https://jangystudio.itch.io/resr.scaler ❤
-
 ## Credits.
 
 Real-ESRGAN - https://github.com/xinntao/Real-ESRGAN
 
 ## How is made. 🛠
 
-ReSRScaler is completely written in Python, from backend to frontend. External packages are:
+RealESRScaler is completely written in Python, from backend to frontend. External packages are:
 - [ ] AI  -> Pytorch-directml
 - [ ] GUI -> Tkinter / Tkdnd / Sv_ttk
 - [ ] Image/video -> OpenCV / Moviepy
@@ -40,9 +37,9 @@ ReSRScaler is completely written in Python, from backend to frontend. External p
  DirectX runtime: https://www.microsoft.com/en-us/download/details.aspx?id=8109
  
 #### Installation:
- 1. download the ReSRScaler release .zip
+ 1. download the RealESRScaler release .zip
  2. unzip using 7zip or similar
- 3. execute ReSRScaler.exe in the directory
+ 3. execute RealESRScaler.exe in the directory
 
 ## Requirements. 🤓
 - [ ] Windows 11 / Windows 10
