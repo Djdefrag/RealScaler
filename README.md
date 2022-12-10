@@ -30,17 +30,6 @@ RealESRScaler is completely written in Python, from backend to frontend. Externa
 - [ ] Packaging   -> Pyinstaller
 - [ ] Miscellaneous -> Pywin32 / Win32mica / split_image
 
-## Installation. 👨‍💻
-#### Prerequisites: 
- Visual C++: https://www.techpowerup.com/download/visual-c-redistributable-runtime-package-all-in-one/
- 
- DirectX runtime: https://www.microsoft.com/en-us/download/details.aspx?id=8109
- 
-#### Installation:
- 1. download the RealESRScaler release .zip
- 2. unzip using 7zip or similar
- 3. execute RealESRScaler.exe in the directory
-
 ## Requirements. 🤓
 - [ ] Windows 11 / Windows 10
 - [ ] RAM >= 8Gb
