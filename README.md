@@ -47,7 +47,7 @@ RealESRScaler is completely written in Python, from backend to frontend. Externa
 - [x] Drag&drop files [image/multiple images/video]
 - [x] Automatic image tiling and merging to avoid gpu VRAM limitation
 - [x] Resize image/video before upscaling
-- [x] Cpu and Gpu backend
+- [x] Multiple gpu backend
 - [x] Compatible images - png, jpeg, bmp, webp, tif  
 - [x] Compatible video  - mp4, wemb, gif, mkv, flv, avi, mov, qt 
 
