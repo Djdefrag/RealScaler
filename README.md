@@ -8,9 +8,8 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://user-images.githubusercontent.com/32263112/207299154-56c31df9-f7e8-46c0-b07d-4f39b368b164.png"> </a> 
+    <img src="https://user-images.githubusercontent.com/32263112/208719628-59c9a4cc-d22c-4456-9c0c-dff5b1593aa5.PNG"> </a> 
 </div>
-
 
 ## Other AI projects.🤓
 
@@ -58,9 +57,9 @@ RealESRScaler is completely written in Python, from backend to frontend. Externa
 - [x] Include audio for upscaled video
 - [ ] Optimizing image/frame resize and video frames extraction speed
 - [ ] Update libraries 
-    - [ ] Python 3.10 (expecting ~10% more performance) 
+    - [x] Python 3.10 (expecting ~10% more performance) 
     - [ ] Python 3.11 (expecting ~30% more performance)
-    - [ ] pytorch-directml
+    - [x] pytorch-directml
 
 ## Known bugs.
 - [x] Windows10 - the app starts with white colored navbar instead of dark
