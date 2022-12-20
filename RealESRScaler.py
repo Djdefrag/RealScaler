@@ -7,7 +7,6 @@ import multiprocessing
 import os
 import os.path
 import platform
-import queue
 import shutil
 import sys
 import threading
@@ -28,9 +27,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
+import torch_directml
 from moviepy.audio.AudioClip import CompositeAudioClip
 from moviepy.audio.io import AudioFileClip
-from moviepy.video.io import ImageSequenceClip, VideoFileClip
+from moviepy.editor import VideoFileClip
+from moviepy.video.io import ImageSequenceClip
+from moviepy.video.io import VideoFileClip as MoviePyClip
 from PIL import Image, ImageDraw, ImageFont
 from split_image import reverse_split, split_image
 from win32mica import MICAMODE, ApplyMica
@@ -38,40 +40,54 @@ from win32mica import MICAMODE, ApplyMica
 import sv_ttk
 
 pay      = True
-version  = "v. 8.0"
+version  = "v. 9.0"
 
-if not pay:
-    version = version + ".f"
+
+if not pay: version = version + ".f"
 
 global app_name
 app_name = "RealESRScaler"
 
 image_path            = "no file"
-AI_model              = "RealESRGAN_x4plus"
-models_array          = [ 'RealESRGAN_x4plus' ]
+models_array          = [ 'RealESRGAN_plus_x4', 'RealESR_generalv3_x4' ]
+AI_model              = models_array[0]
 denoise_strength      = 1
 
-device                = "dml:0"
+device                = 0
 input_video_path      = ""
 target_file_extension = ".png"
+file_extension_list = [ '.png', '.jpg', '.jp2', '.bmp', '.tiff' ]
 half_precision        = True
 single_file           = False
 multiple_files        = False
 video_files           = False
 multi_img_list        = []
 video_frames_list     = []
-video_frames_upscaled_list = []
-device_list           = []
+frames_upscaled_list  = []
+vram_multiplier       = 1
 default_vram_limiter  = 8
 multiplier_num_tiles  = 2
-cpu_number            = 2
+cpu_number            = 4
 windows_subversion    = int(platform.version().split('.')[2])
 resize_algorithm      = Image.LINEAR
-compatible_gpus       = torch.dml.device_count()
+compatible_gpus       = torch_directml.device_count()
 
-if compatible_gpus == 1: device_list.append('GPU')
-else: 
-    for index in range(compatible_gpus): device_list.append('GPU ' + str(index + 1))
+device_list_names     = []
+device_list           = []
+
+class Gpu:
+    def __init__(self, name, index):
+        self.name = name
+        self.index = index
+
+for index in range(compatible_gpus): 
+    gpu = Gpu(name = torch_directml.device_name(index), index = index)
+    device_list.append(gpu)
+    device_list_names.append(gpu.name)
+
+torch.autograd.set_detect_anomaly(False)
+torch.autograd.profiler.profile(False)
+torch.autograd.profiler.emit_nvtx(False)
 
 githubme           = "https://github.com/Djdefrag/ReSRScaler"
 itchme             = "https://jangystudio.itch.io/realesrscaler"
@@ -146,16 +162,13 @@ font_scale = round(1/scaleFactor, 1)
 
 # ---------------------- /Dimensions ----------------------
 
-# ---------------------- Functions ----------------------
 
 # ------------------------ Utils ------------------------
 
 
-def opengithub():
-    webbrowser.open(githubme, new=1)
+def opengithub(): webbrowser.open(githubme, new=1)
 
-def openitch():
-    webbrowser.open(itchme, new=1)
+def openitch(): webbrowser.open(itchme, new=1)
 
 def create_temp_dir(name_dir):
     if os.path.exists(name_dir): shutil.rmtree(name_dir)
@@ -270,49 +283,30 @@ def resize_image_list(image_list, resize_factor, target_file_extension):
 
 #VIDEO
 
-def extract_single_frame(video_path, index, target_file_extension):
-    result_path = app_name + "_temp" + os.sep + "frame_" + str(index) + target_file_extension
-
-    cap = cv2.VideoCapture(video_path)
-    cap.set(cv2.CAP_PROP_POS_FRAMES, index)
-    _ , frame = cap.read()
-    cv2.imwrite(result_path, frame)
-    cap.release()
-
 def extract_frames_from_video(video_path, target_file_extension, cpu_number):
     cap          = cv2.VideoCapture(video_path)
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    index        = 0
-    index_list   = []
-    video_frames_list = []
+    frame_rate   = int(cap.get(cv2.CAP_PROP_FPS))
     cap.release()
 
-    # prepare list for multithread pool
-    for index in range(total_frames):
-        index_list.append(index)
-        result_path = app_name + "_temp" + os.sep + "frame_" + str(index) + target_file_extension
-        video_frames_list.append(result_path)
-        index += 1
+    video_frames_list = []
 
     # extract frames
-
-    with ThreadPool(cpu_number) as pool:
-        pool.starmap(extract_single_frame, 
-                        zip(itertools.repeat(video_path), 
-                            index_list,
-                            itertools.repeat(target_file_extension)))
+    video = VideoFileClip(video_path)
+    img_sequence = app_name + "_temp" + os.sep + "frame_%01d" + '.jpg'
+    video_frames_list = video.write_images_sequence(img_sequence, 
+                                                    fps = frame_rate,
+                                                    logger = 'bar')
     
     # extract audio
     try:
-        video = VideoFileClip.VideoFileClip(video_path)
-        # audio = video.audio
+        video = MoviePyClip.VideoFileClip(video_path)
         video.audio.write_audiofile(app_name + "_temp" + os.sep + "audio.mp3")
     except Exception as e:
         pass
 
     return video_frames_list
 
-def video_reconstruction_by_frames(input_video_path, video_frames_upscaled_list, AI_model):
+def video_reconstruction_by_frames(input_video_path, frames_upscaled_list, AI_model):
     cap          = cv2.VideoCapture(input_video_path)
     frame_rate   = int(cap.get(cv2.CAP_PROP_FPS))
     path_as_list = input_video_path.split("/")
@@ -325,10 +319,10 @@ def video_reconstruction_by_frames(input_video_path, video_frames_upscaled_list,
     upscaled_video_path = (only_path + video_name + "_" + AI_model + ".mp4")
 
     temp_video_path = app_name + "_temp" + os.sep + "tempVideo.mp4"
-    clip = ImageSequenceClip.ImageSequenceClip(video_frames_upscaled_list, fps=frame_rate)
+    clip = ImageSequenceClip.ImageSequenceClip(frames_upscaled_list, fps=frame_rate)
     clip.write_videofile(temp_video_path, fps=frame_rate)
 
-    video = VideoFileClip.VideoFileClip(temp_video_path)
+    video = MoviePyClip.VideoFileClip(temp_video_path)
     
     # audio
     try:
@@ -341,7 +335,7 @@ def video_reconstruction_by_frames(input_video_path, video_frames_upscaled_list,
     video.write_videofile(upscaled_video_path)
 
 def resize_frame(image_path, new_width, new_height, max_height_or_width, target_file_extension):
-    new_image_path = image_path.replace(target_file_extension, "_resized" + target_file_extension)
+    new_image_path = image_path.replace('.jpg', "_resized" + target_file_extension)
 
     resized_image = Image.open(image_path).resize((new_width, new_height), resample = resize_algorithm)
 
@@ -378,10 +372,11 @@ def resize_frame_list(image_list, resize_factor, target_file_extension, cpu_numb
                                     itertools.repeat(target_file_extension)))
 
     for image in image_list:
-        resized_image_path = image.replace(target_file_extension, "_resized" + target_file_extension)
+        resized_image_path = image.replace('.jpg', "_resized" + target_file_extension)
         downscaled_images.append(resized_image_path)
 
     return downscaled_images
+
 
 # ----------------------- /Utils ------------------------
 
@@ -390,6 +385,7 @@ def resize_frame_list(image_list, resize_factor, target_file_extension, cpu_numb
 
 
 ## ---------------------- AI related ----------------------
+
 
 @torch.no_grad()
 def default_init_weights(module_list, scale=1, bias_fill=0, **kwargs):
@@ -771,297 +767,6 @@ class RRDBNet(nn.Module):
         out = self.conv_last(self.lrelu(self.conv_hr(feat)))
         return out
 
-class RealESRGANer():
-    """A helper class for upsampling images with RealESRGAN.
-
-    Args:
-        scale (int): Upsampling scale factor used in the networks. It is usually 2 or 4.
-        model_path (str): The path to the pretrained model. It can be urls (will first download it automatically).
-        model (nn.Module): The defined network. Default: None.
-        tile (int): As too large images result in the out of GPU memory issue, so this tile option will first crop
-            input images into tiles, and then process each of them. Finally, they will be merged into one image.
-            0 denotes for do not use tile. Default: 0.
-        tile_pad (int): The pad size for each tile, to remove border artifacts. Default: 10.
-        pre_pad (int): Pad the input images to avoid border artifacts. Default: 10.
-        half (float): Whether to use half precision during inference. Default: False.
-    """
-
-    def __init__(self,
-                 scale,
-                 model_path,
-                 dni_weight=None,
-                 model=None,
-                 tile=0,
-                 tile_pad=10,
-                 pre_pad=10,
-                 half=False,
-                 device=None,
-                 gpu_id=None):
-        self.scale = scale
-        self.tile_size = tile
-        self.tile_pad = tile_pad
-        self.pre_pad = pre_pad
-        self.mod_scale = None
-        self.half = half
-
-        # initialize model
-        self.device = torch.device(device)
-
-        if isinstance(model_path, list):
-            # dni
-            assert len(model_path) == len(dni_weight), 'model_path and dni_weight should have the save length.'
-            loadnet = self.dni(model_path[0], model_path[1], dni_weight)
-        else:
-            loadnet = torch.load(model_path, map_location=torch.device('cpu'))
-
-        # prefer to use params_ema
-        if 'params_ema' in loadnet:
-            keyname = 'params_ema'
-        else:
-            keyname = 'params'
-        model.load_state_dict(loadnet[keyname], strict=True)
-
-        model.eval()
-        self.model = model.to(self.device)
-        if self.half:
-            self.model = self.model.half()
-
-    def dni(self, net_a, net_b, dni_weight, key='params', loc='cpu'):
-        """Deep network interpolation.
-
-        ``Paper: Deep Network Interpolation for Continuous Imagery Effect Transition``
-        """
-        net_a = torch.load(net_a, map_location=torch.device(loc))
-        net_b = torch.load(net_b, map_location=torch.device(loc))
-        for k, v_a in net_a[key].items():
-            net_a[key][k] = dni_weight[0] * v_a + dni_weight[1] * net_b[key][k]
-        return net_a
-
-    def pre_process(self, img):
-        """Pre-process, such as pre-pad and mod pad, so that the images can be divisible
-        """
-        img = torch.from_numpy(np.transpose(img, (2, 0, 1))).float()
-        self.img = img.unsqueeze(0).to(self.device)
-        if self.half:
-            self.img = self.img.half()
-
-        # pre_pad
-        if self.pre_pad != 0:
-            self.img = F.pad(self.img, (0, self.pre_pad, 0, self.pre_pad), 'reflect')
-        # mod pad for divisible borders
-        if self.scale == 2:
-            self.mod_scale = 2
-        elif self.scale == 1:
-            self.mod_scale = 4
-        if self.mod_scale is not None:
-            self.mod_pad_h, self.mod_pad_w = 0, 0
-            _, _, h, w = self.img.size()
-            if (h % self.mod_scale != 0):
-                self.mod_pad_h = (self.mod_scale - h % self.mod_scale)
-            if (w % self.mod_scale != 0):
-                self.mod_pad_w = (self.mod_scale - w % self.mod_scale)
-            self.img = F.pad(self.img, (0, self.mod_pad_w, 0, self.mod_pad_h), 'reflect')
-
-    def process(self):
-        # model inference
-        self.output = self.model(self.img)
-
-    def tile_process(self):
-        """It will first crop input images to tiles, and then process each tile.
-        Finally, all the processed tiles are merged into one images.
-
-        Modified from: https://github.com/ata4/esrgan-launcher
-        """
-        batch, channel, height, width = self.img.shape
-        output_height = height * self.scale
-        output_width = width * self.scale
-        output_shape = (batch, channel, output_height, output_width)
-
-        # start with black image
-        self.output = self.img.new_zeros(output_shape)
-        tiles_x = math.ceil(width / self.tile_size)
-        tiles_y = math.ceil(height / self.tile_size)
-
-        # loop over all tiles
-        for y in range(tiles_y):
-            for x in range(tiles_x):
-                # extract tile from input image
-                ofs_x = x * self.tile_size
-                ofs_y = y * self.tile_size
-                # input tile area on total image
-                input_start_x = ofs_x
-                input_end_x = min(ofs_x + self.tile_size, width)
-                input_start_y = ofs_y
-                input_end_y = min(ofs_y + self.tile_size, height)
-
-                # input tile area on total image with padding
-                input_start_x_pad = max(input_start_x - self.tile_pad, 0)
-                input_end_x_pad = min(input_end_x + self.tile_pad, width)
-                input_start_y_pad = max(input_start_y - self.tile_pad, 0)
-                input_end_y_pad = min(input_end_y + self.tile_pad, height)
-
-                # input tile dimensions
-                input_tile_width = input_end_x - input_start_x
-                input_tile_height = input_end_y - input_start_y
-                tile_idx = y * tiles_x + x + 1
-                input_tile = self.img[:, :, input_start_y_pad:input_end_y_pad, input_start_x_pad:input_end_x_pad]
-
-                # upscale tile
-                try:
-                    with torch.no_grad():
-                        output_tile = self.model(input_tile)
-                except RuntimeError as error:
-                    print('Error', error)
-                print(f'\tTile {tile_idx}/{tiles_x * tiles_y}')
-
-                # output tile area on total image
-                output_start_x = input_start_x * self.scale
-                output_end_x = input_end_x * self.scale
-                output_start_y = input_start_y * self.scale
-                output_end_y = input_end_y * self.scale
-
-                # output tile area without padding
-                output_start_x_tile = (input_start_x - input_start_x_pad) * self.scale
-                output_end_x_tile = output_start_x_tile + input_tile_width * self.scale
-                output_start_y_tile = (input_start_y - input_start_y_pad) * self.scale
-                output_end_y_tile = output_start_y_tile + input_tile_height * self.scale
-
-                # put tile into output image
-                self.output[:, :, output_start_y:output_end_y,
-                            output_start_x:output_end_x] = output_tile[:, :, output_start_y_tile:output_end_y_tile,
-                                                                       output_start_x_tile:output_end_x_tile]
-
-    def post_process(self):
-        # remove extra pad
-        if self.mod_scale is not None:
-            _, _, h, w = self.output.size()
-            self.output = self.output[:, :, 0:h - self.mod_pad_h * self.scale, 0:w - self.mod_pad_w * self.scale]
-        # remove prepad
-        if self.pre_pad != 0:
-            _, _, h, w = self.output.size()
-            self.output = self.output[:, :, 0:h - self.pre_pad * self.scale, 0:w - self.pre_pad * self.scale]
-        return self.output
-
-    @torch.no_grad()
-    def enhance(self, img, outscale=None, alpha_upsampler='realesrgan'):
-        h_input, w_input = img.shape[0:2]
-        # img: numpy
-        img = img.astype(np.float32)
-        if np.max(img) > 256:  # 16-bit image
-            max_range = 65535
-            print('\tInput is a 16-bit image')
-        else:
-            max_range = 255
-        img = img / max_range
-        if len(img.shape) == 2:  # gray image
-            img_mode = 'L'
-            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-        elif img.shape[2] == 4:  # RGBA image with alpha channel
-            img_mode = 'RGBA'
-            alpha = img[:, :, 3]
-            img = img[:, :, 0:3]
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            if alpha_upsampler == 'realesrgan':
-                alpha = cv2.cvtColor(alpha, cv2.COLOR_GRAY2RGB)
-        else:
-            img_mode = 'RGB'
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-        # ------------------- process image (without the alpha channel) ------------------- #
-        self.pre_process(img)
-        if self.tile_size > 0:
-            self.tile_process()
-        else:
-            self.process()
-        output_img = self.post_process()
-        output_img = output_img.data.squeeze().float().cpu().clamp_(0, 1).numpy()
-        output_img = np.transpose(output_img[[2, 1, 0], :, :], (1, 2, 0))
-        if img_mode == 'L':
-            output_img = cv2.cvtColor(output_img, cv2.COLOR_BGR2GRAY)
-
-        # ------------------- process the alpha channel if necessary ------------------- #
-        if img_mode == 'RGBA':
-            if alpha_upsampler == 'realesrgan':
-                self.pre_process(alpha)
-                if self.tile_size > 0:
-                    self.tile_process()
-                else:
-                    self.process()
-                output_alpha = self.post_process()
-                output_alpha = output_alpha.data.squeeze().float().cpu().clamp_(0, 1).numpy()
-                output_alpha = np.transpose(output_alpha[[2, 1, 0], :, :], (1, 2, 0))
-                output_alpha = cv2.cvtColor(output_alpha, cv2.COLOR_BGR2GRAY)
-            else:  # use the cv2 resize for alpha channel
-                h, w = alpha.shape[0:2]
-                output_alpha = cv2.resize(alpha, (w * self.scale, h * self.scale), interpolation=cv2.INTER_LINEAR)
-
-            # merge the alpha channel
-            output_img = cv2.cvtColor(output_img, cv2.COLOR_BGR2BGRA)
-            output_img[:, :, 3] = output_alpha
-
-        # ------------------------------ return ------------------------------ #
-        if max_range == 65535:  # 16-bit image
-            output = (output_img * 65535.0).round().astype(np.uint16)
-        else:
-            output = (output_img * 255.0).round().astype(np.uint8)
-
-        if outscale is not None and outscale != float(self.scale):
-            output = cv2.resize(
-                output, (
-                    int(w_input * outscale),
-                    int(h_input * outscale),
-                ), interpolation=cv2.INTER_LANCZOS4)
-
-        return output, img_mode
-
-class PrefetchReader(threading.Thread):
-    """Prefetch images.
-
-    Args:
-        img_list (list[str]): A image list of image paths to be read.
-        num_prefetch_queue (int): Number of prefetch queue.
-    """
-
-    def __init__(self, img_list, num_prefetch_queue):
-        super().__init__()
-        self.que = queue.Queue(num_prefetch_queue)
-        self.img_list = img_list
-
-    def run(self):
-        for img_path in self.img_list:
-            img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
-            self.que.put(img)
-
-        self.que.put(None)
-
-    def __next__(self):
-        next_item = self.que.get()
-        if next_item is None:
-            raise StopIteration
-        return next_item
-
-    def __iter__(self):
-        return self
-
-class IOConsumer(threading.Thread):
-
-    def __init__(self, opt, que, qid):
-        super().__init__()
-        self._queue = que
-        self.qid = qid
-        self.opt = opt
-
-    def run(self):
-        while True:
-            msg = self._queue.get()
-            if isinstance(msg, str) and msg == 'quit':
-                break
-
-            output = msg['output']
-            save_path = msg['save_path']
-            cv2.imwrite(save_path, output)
-        print(f'IO worker {self.qid} is done.')
-
 class SRVGGNetCompact(nn.Module):
 
     def __init__(self, num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=16, upscale=4, act_type='prelu'):
@@ -1119,18 +824,14 @@ class SRVGGNetCompact(nn.Module):
 
 # ----------------------- Core ------------------------
 
+
 def thread_check_steps_for_images( not_used_var, not_used_var2 ):
     time.sleep(3)
     try:
         while True:
             step = read_log_file()
             if "Upscale completed" in step or "Error while upscaling" in step or "Stopped upscaling" in step:
-                
-                if  "Error while upscaling" in step:
-                    info_string.set("Error while upscaling | check .log file")
-                else:
-                    info_string.set(step)
-
+                info_string.set(step)
                 stop = 1 + "x"
             info_string.set(step)
             time.sleep(1)
@@ -1143,12 +844,7 @@ def thread_check_steps_for_videos( not_used_var, not_used_var2 ):
         while True:
             step = read_log_file()
             if "Upscale video completed" in step or "Error while upscaling" in step or "Stopped upscaling" in step:
-                
-                if  "Error while upscaling" in step:
-                    info_string.set("Error while upscaling | check .log file")
-                else:
-                    info_string.set(step)
-
+                info_string.set(step)
                 stop = 1 + "x"
             info_string.set(step)
             time.sleep(1)
@@ -1156,39 +852,99 @@ def thread_check_steps_for_videos( not_used_var, not_used_var2 ):
         place_upscale_button()
 
 
-def prepare_AI_model(AI_model, device):
-    backend = torch.device(device)
+
+def enhance(model, img, backend, half_precision):
+    img = img.astype(np.float32)
+
+    if np.max(img) > 256: max_range = 65535 # 16 bit images
+    else: max_range = 255
+
+    img = img / max_range
+    if len(img.shape) == 2:  # gray image
+        img_mode = 'L'
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+    elif img.shape[2] == 4:  # RGBA image with alpha channel
+        img_mode = 'RGBA'
+        alpha = img[:, :, 3]
+        img = img[:, :, 0:3]
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        alpha = cv2.cvtColor(alpha, cv2.COLOR_GRAY2RGB)
+    else:
+        img_mode = 'RGB'
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    # ------------------- process image (without the alpha channel) ------------------- #
+    
+    img = torch.from_numpy(np.transpose(img, (2, 0, 1))).float()
+    img = img.unsqueeze(0).to(backend)
+    if half_precision: img = img.half()
+
+    output = model(img) ## model
+    
+    output_img = output.data.squeeze().float().cpu().clamp_(0, 1).numpy()
+    output_img = np.transpose(output_img[[2, 1, 0], :, :], (1, 2, 0))
+
+    if img_mode == 'L':  output_img = cv2.cvtColor(output_img, cv2.COLOR_BGR2GRAY)
+
+    # ------------------- process the alpha channel if necessary ------------------- #
+    
+    if img_mode == 'RGBA':
+        alpha = torch.from_numpy(np.transpose(alpha, (2, 0, 1))).float()
+        alpha = alpha.unsqueeze(0).to(backend)
+        if half_precision: alpha = alpha.half()
+
+        output_alpha = model(alpha) ## model
+
+        output_alpha = output_alpha.data.squeeze().float().cpu().clamp_(0, 1).numpy()
+        output_alpha = np.transpose(output_alpha[[2, 1, 0], :, :], (1, 2, 0))
+        output_alpha = cv2.cvtColor(output_alpha, cv2.COLOR_BGR2GRAY)
+
+        # merge the alpha channel
+        output_img = cv2.cvtColor(output_img, cv2.COLOR_BGR2BGRA)
+        output_img[:, :, 3] = output_alpha
+
+    # ------------------------------ return ------------------------------ #
+    if max_range == 65535: output = (output_img * 65535.0).round().astype(np.uint16) # 16-bit image
+    else: output = (output_img * 255.0).round().astype(np.uint8)
+
+    return output, img_mode
+
+def prepare_model(AI_model, device, half_precision):
+    backend = torch.device(torch_directml.device(device))
 
     model_path = find_by_relative_path("AI" + os.sep + AI_model + ".pth")
 
-    dni_weight = None
+    if 'RealESRGAN_plus_x4' in AI_model: 
+        model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, 
+                        num_block=23, num_grow_ch=32, scale=4)
+    elif 'RealESR_generalv3_x4' in AI_model: 
+        model = SRVGGNetCompact(num_in_ch=3, num_out_ch=3, num_feat=64, 
+                                num_conv=32, upscale=4, act_type='prelu')
 
-    if 'RealESRGAN_x4plus' in AI_model: 
-        model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
-        netscale = 4
-    elif 'realesr-general-x4v3' in AI_model: 
-        model = SRVGGNetCompact(num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=32, upscale=4, act_type='prelu')
-        netscale = 4
-        if denoise_strength != 1:
-            wdn_model_path = model_path.replace('realesr-general-x4v3', 'realesr-general-wdn-x4v3')
-            model_path = [model_path, wdn_model_path]
-            dni_weight = [denoise_strength, 1 - denoise_strength]
+    loadnet = torch.load(model_path, map_location = torch.device('cpu'))
 
-    model = RealESRGANer( scale = netscale, model_path = model_path, dni_weight = dni_weight,
-                            model = model, tile = 0, tile_pad = 10, pre_pad = 0,
-                            half  = half_precision, gpu_id = None, device = device)
+    if 'params_ema' in loadnet: keyname = 'params_ema'
+    else: keyname = 'params'
+    model.load_state_dict(loadnet[keyname], strict=True)
+    model.eval()
+    
+    model = model.to(backend)
+    if half_precision: model = model.half()
         
     return model
 
-def upscale_image_and_save(img, model, result_path, device, tiles_resolution):
+def upscale_image_and_save(img, model, result_path, 
+                            tiles_resolution, target_file_extension, 
+                            device, half_precision, task_type):
     img_tmp          = cv2.imread(img)
     image_resolution = max(img_tmp.shape[1], img_tmp.shape[0])
     num_tiles        = image_resolution/tiles_resolution
+    backend          = torch.device(torch_directml.device(device))
 
     if num_tiles <= 1:
         with torch.no_grad():
-            img_adapted  = cv2.imread(img, cv2.IMREAD_UNCHANGED)
-            img_upscaled, _ = model.enhance(img_adapted, outscale=4)
+            img_adapted     = cv2.imread(img, cv2.IMREAD_UNCHANGED)
+            img_upscaled, _ = enhance(model, img_adapted, backend, half_precision)
             cv2.imwrite(result_path, img_upscaled)
     else:
         num_tiles = round(num_tiles)
@@ -1198,22 +954,32 @@ def upscale_image_and_save(img, model, result_path, device, tiles_resolution):
         num_tiles_applied = int(num_tiles/2)
         how_many_tiles = int(pow(num_tiles/2, 2))
 
-        split_image(img, num_tiles_applied, num_tiles_applied, False, should_cleanup = True, should_quiet=True, output_dir=None)
+        split_image(img, num_tiles_applied, num_tiles_applied, False, 
+                    should_cleanup = False, should_quiet = True, 
+                    output_dir = None)
 
         tiles = []
-        for index in range(how_many_tiles):
-            tiles.append(img.replace(".png", "_" + str(index) + ".png"))
+        for index in range(how_many_tiles): tiles.append(img.replace(target_file_extension, "_" + str(index) + target_file_extension))
 
         with torch.no_grad():
             for tile in tiles:
                 tile_adapted  = cv2.imread(tile, cv2.IMREAD_UNCHANGED)
-                tile_upscaled, _ = model.enhance(tile_adapted, outscale=4)
+                tile_upscaled, _ = enhance(model, tile_adapted, backend, half_precision)
                 cv2.imwrite(tile, tile_upscaled)
 
-        reverse_split(tiles, num_tiles_applied, num_tiles_applied, result_path, should_cleanup=True, should_quiet=True)
+        reverse_split(tiles, num_tiles_applied, num_tiles_applied, 
+                        result_path, should_cleanup = False, 
+                        should_quiet = True)
 
-def process_upscale_multiple_images_resrscaler(image_list, AI_model, resize_factor, device, tiles_resolution, target_file_extension):
+        if task_type == 'image': delete_list_of_files(tiles)
+
+
+def process_upscale_multiple_images(image_list, AI_model, resize_factor, device, 
+                                    tiles_resolution, target_file_extension, 
+                                    half_precision):
     try:
+        if AI_model == "RealESR_generalv3_x4": half_precision = False
+
         start = timer()
         
         write_in_log_file('...')
@@ -1226,12 +992,12 @@ def process_upscale_multiple_images_resrscaler(image_list, AI_model, resize_fact
 
         write_in_log_file('Upscaling...')
         for img in image_list:
-            model = prepare_AI_model(AI_model, device)
+            model = prepare_model(AI_model, device, half_precision)
             result_path = prepare_output_filename(img, AI_model, target_file_extension)
-            upscale_image_and_save(img, model, 
-                                    result_path, device,    
-                                    tiles_resolution)
-
+            upscale_image_and_save(img, model, result_path, tiles_resolution, 
+                                    target_file_extension, device, half_precision,
+                                    "image")
+            del model
             done_images += 1
             write_in_log_file("Upscaled images " + str(done_images) + "/" + str(how_many_images))
                 
@@ -1241,17 +1007,20 @@ def process_upscale_multiple_images_resrscaler(image_list, AI_model, resize_fact
     except Exception as e:
         write_in_log_file('Error while upscaling' + '\n\n' + str(e)) 
         import tkinter as tk
-        root = tk.Tk()
-        root.withdraw()
+        error_root = tk.Tk()
+        error_root.withdraw()
         tk.messagebox.showerror(title   = 'Error', 
                                 message = 'Upscale failed caused by:\n\n' +
-                                           str(e) + '\n' +
+                                           str(e) + '\n\n' +
                                           'Please report the error on Github.com or Itch.io.' +
                                           '\n\nThank you :)')
-        os.kill(os.getpid(), 9)
 
-def process_upscale_video_frames_resrscaler(input_video_path, AI_model, resize_factor, device, tiles_resolution, target_file_extension, cpu_number):
+def process_upscale_video_frames(input_video_path, AI_model, resize_factor, device,
+                                             tiles_resolution, target_file_extension, cpu_number,
+                                             half_precision):
     try:
+        if AI_model == "RealESR_generalv3_x4": half_precision = False
+
         start = timer()
 
         create_temp_dir(app_name + "_temp")
@@ -1267,22 +1036,22 @@ def process_upscale_video_frames_resrscaler(input_video_path, AI_model, resize_f
         write_in_log_file('Upscaling...')
         how_many_images = len(image_list)
         done_images     = 0
-        video_frames_upscaled_list = []
+        frames_upscaled_list = []
 
-        model = prepare_AI_model(AI_model, device)
+        model = prepare_model(AI_model, device, half_precision)
 
         for img in image_list:
             result_path = prepare_output_filename(img, AI_model, target_file_extension)
-            video_frames_upscaled_list.append(result_path)
-            upscale_image_and_save(img, model, 
-                                    result_path, device,    
-                                    tiles_resolution)
+            frames_upscaled_list.append(result_path)
+            upscale_image_and_save(img, model, result_path, tiles_resolution, 
+                                    target_file_extension, device, half_precision,
+                                    "video")
             done_images += 1
             write_in_log_file("Upscaled frame " + str(done_images) + "/" + str(how_many_images))
 
         write_in_log_file("Processing upscaled video...")
         
-        video_reconstruction_by_frames(input_video_path, video_frames_upscaled_list, AI_model)
+        video_reconstruction_by_frames(input_video_path, frames_upscaled_list, AI_model)
 
         write_in_log_file("Upscale video completed [" + str(round(timer() - start)) + " sec.]")
 
@@ -1290,20 +1059,16 @@ def process_upscale_video_frames_resrscaler(input_video_path, AI_model, resize_f
     except Exception as e:
         write_in_log_file('Error while upscaling' + '\n\n' + str(e)) 
         import tkinter as tk
-        root = tk.Tk()
-        root.withdraw()
+        error_root = tk.Tk()
+        error_root.withdraw()
         tk.messagebox.showerror(title   = 'Error', 
                                 message = 'Upscale failed caused by:\n\n' +
-                                           str(e) + '\n' +
+                                           str(e) + '\n\n' +
                                           'Please report the error on Github.com or Itch.io.' +
                                           '\n\nThank you :)')
-        os.kill(os.getpid(), 9)
 
     
-
 # ----------------------- /Core ------------------------
-
-# ---------------------- GUI related ----------------------
 
 
 # ---------------------- GUI related ----------------------
@@ -1338,7 +1103,7 @@ def user_input_checks():
         info_string.set("VRAM/RAM value must be a numeric value")
         is_ready = False 
 
-    if tiles_resolution > 0: tiles_resolution = 100 * (1 + int(float(str(selected_VRAM_limiter.get()))))    
+    if tiles_resolution > 0: tiles_resolution = 100 * (vram_multiplier * int(float(str(selected_VRAM_limiter.get()))))    
     else:
         info_string.set("VRAM/RAM value must be > 0")
         is_ready = False
@@ -1353,10 +1118,9 @@ def user_input_checks():
         info_string.set("Cpu number value must be > 0")
         is_ready = False
     elif cpu_number == 1: cpu_number = 1
-    else: cpu_number = int(cpu_number/2)
+    else: cpu_number = int(cpu_number)
 
     return is_ready
-
 
 
 def upscale_button_command():
@@ -1366,12 +1130,13 @@ def upscale_button_command():
     global thread_wait
     global video_frames_list
     global video_files
-    global video_frames_upscaled_list
+    global frames_upscaled_list
     global input_video_path
     global device
     global tiles_resolution
     global target_file_extension
     global cpu_number
+    global half_precision
 
     info_string.set("...")
 
@@ -1381,14 +1146,15 @@ def upscale_button_command():
         if video_files:
             place_stop_button()
 
-            process_upscale = multiprocessing.Process(target = process_upscale_video_frames_resrscaler,
+            process_upscale = multiprocessing.Process(target = process_upscale_video_frames,
                                                     args   = (input_video_path, 
                                                                 AI_model, 
                                                                 resize_factor, 
                                                                 device,
                                                                 tiles_resolution,
                                                                 target_file_extension,
-                                                                cpu_number))
+                                                                cpu_number,
+                                                                half_precision))
             process_upscale.start()
 
             thread_wait = threading.Thread(target = thread_check_steps_for_videos,
@@ -1399,13 +1165,14 @@ def upscale_button_command():
         elif multiple_files or single_file:
             place_stop_button()
             
-            process_upscale = multiprocessing.Process(target = process_upscale_multiple_images_resrscaler,
+            process_upscale = multiprocessing.Process(target = process_upscale_multiple_images,
                                                         args   = (multi_img_list, 
                                                                 AI_model, 
                                                                 resize_factor, 
                                                                 device,
                                                                 tiles_resolution,
-                                                                target_file_extension))
+                                                                target_file_extension,
+                                                                half_precision))
             process_upscale.start()
 
             thread_wait = threading.Thread(target = thread_check_steps_for_images,
@@ -1416,7 +1183,6 @@ def upscale_button_command():
             info_string.set("No file selected")
   
 
-
 def stop_button_command():
     global process_upscale
     process_upscale.terminate()
@@ -1424,7 +1190,6 @@ def stop_button_command():
     
     # this will stop thread that check upscaling steps
     write_in_log_file("Stopped upscaling") 
-
 
 
 
@@ -1509,7 +1274,9 @@ def file_drop_event(event):
                 image_path = "none"
                 video_frames_list = []
 
-def check_compatibility(supported_file_dropped_number, not_supported_file_dropped_number, supported_video_dropped_number):
+def check_compatibility(supported_file_dropped_number, 
+                        not_supported_file_dropped_number, 
+                        supported_video_dropped_number):
     all_supported  = True
     single_file    = False
     multiple_files = False
@@ -1789,8 +1556,6 @@ def place_drag_drop_widget():
 
 
 
-
-
 def combobox_AI_selection(event):
     global AI_model
     selected = str(selected_AI.get())
@@ -1802,16 +1567,12 @@ def combobox_backend_selection(event):
     global device
 
     selected_option = str(selected_backend.get())
+    combo_box_backend.set('')
+    combo_box_backend.set(selected_option)
 
-    if selected_option == "GPU": # 1 gpu
-        combo_box_backend.set('')
-        combo_box_backend.set(selected_option)
-        device = 'dml:0'
-    else:                        # multiple gpus
-        selected_gpu_number = [int(s) for s in selected_option.split() if s.isdigit()]
-        combo_box_backend.set('')
-        combo_box_backend.set(selected_option)
-        device = 'dml:'+str(selected_gpu_number[0]-1)
+    for obj in device_list:
+        if obj.name == selected_option:
+            device = obj.index
 
 def combobox_extension_selection(event):
     global target_file_extension
@@ -1820,12 +1581,24 @@ def combobox_extension_selection(event):
     combobox_file_extension.set('')
     combobox_file_extension.set(selected)
 
+
 def place_AI_combobox():
     Ai_container = ttk.Notebook(root)
     Ai_container.place(x = 45 + left_bar_width/2 - 370/2, 
                         y = button1_y - 17, 
                         width  = 370,
                         height = 75)
+
+    Ai_label = ttk.Label(root, 
+                    font       = bold11, 
+                    foreground = text_color, 
+                    justify    = 'left', 
+                    relief     = 'flat', 
+                    text       = " AI model ")
+    Ai_label.place(x = 90,
+                    y = button1_y - 2,
+                    width  = 130,
+                    height = 42)
 
     global combo_box_AI
     combo_box_AI = ttk.Combobox(root, 
@@ -1836,23 +1609,12 @@ def place_AI_combobox():
                         state        = 'readonly',
                         takefocus    = False,
                         font         = bold10)
-    combo_box_AI.place(x = 15 + left_bar_width/2, 
+    combo_box_AI.place(x = 10 + left_bar_width/2, 
                         y = button1_y, 
                         width  = 200, 
                         height = 40)
     combo_box_AI.bind('<<ComboboxSelected>>', combobox_AI_selection)
     combo_box_AI.set(AI_model)
-
-    Ai_label = ttk.Label(root, 
-                        font       = bold11, 
-                        foreground = text_color, 
-                        justify    = 'left', 
-                        relief     = 'flat', 
-                        text       = " AI model ")
-    Ai_label.place(x = 90,
-                    y = button1_y - 2,
-                    width  = 130,
-                    height = 42)
 
 def place_backend_combobox():
     backend_container = ttk.Notebook(root)
@@ -1860,22 +1622,6 @@ def place_backend_combobox():
                             y = button2_y - 17, 
                             width  = 370,
                             height = 75)
-
-    global combo_box_backend
-    combo_box_backend = ttk.Combobox(root, 
-                            textvariable = selected_backend, 
-                            justify      = 'center',
-                            foreground   = text_color,
-                            values       = device_list,
-                            state        = 'readonly',
-                            takefocus    = False,
-                            font         = bold10)
-    combo_box_backend.place(x = 65 + left_bar_width/2, 
-                            y = button2_y, 
-                            width  = 145, 
-                            height = 40)
-    combo_box_backend.bind('<<ComboboxSelected>>', combobox_backend_selection)
-    combo_box_backend.set(device_list[0])
 
     backend_label = ttk.Label(root, 
                             font       = bold11, 
@@ -1888,9 +1634,23 @@ def place_backend_combobox():
                         width  = 155,
                         height = 42)
 
-def place_file_extension_combobox():
-    file_extension_list = [ ' .png', ' .jpg' ]
+    global combo_box_backend
+    combo_box_backend = ttk.Combobox(root, 
+                            textvariable = selected_backend, 
+                            justify      = 'center',
+                            foreground   = text_color,
+                            values       = device_list_names,
+                            state        = 'readonly',
+                            takefocus    = False,
+                            font         = bold10)
+    combo_box_backend.place(x = 10 + left_bar_width/2, 
+                            y = button2_y, 
+                            width  = 200, 
+                            height = 40)
+    combo_box_backend.bind('<<ComboboxSelected>>', combobox_backend_selection)
+    combo_box_backend.set(device_list_names[0])
 
+def place_file_extension_combobox():
     file_extension_container = ttk.Notebook(root)
     file_extension_container.place(x = 45 + left_bar_width/2 - 370/2, 
                         y = button3_y - 17, 
@@ -1902,7 +1662,7 @@ def place_file_extension_combobox():
                         foreground = text_color, 
                         justify    = 'left', 
                         relief     = 'flat', 
-                        text       = " Image/frame \n upscaled extension ")
+                        text       = " AI output extension ")
     file_extension_label.place(x = 90,
                             y = button3_y - 2,
                             width  = 155,
@@ -1953,7 +1713,7 @@ def place_resize_factor_spinbox():
                                     foreground = text_color, 
                                     justify    = 'left', 
                                     relief     = 'flat', 
-                                    text       = " % Downscale \n      before upscaling ")
+                                    text       = " Input resolution | % ")
     resize_factor_label.place(x = 90,
                             y = button4_y - 2,
                             width  = 155,
@@ -1987,7 +1747,7 @@ def place_VRAM_spinbox():
                             foreground = text_color, 
                             justify    = 'left', 
                             relief     = 'flat', 
-                            text       = " Gb Vram limiter ")
+                            text       = " Vram limiter | GB ")
     vram_label.place(x = 90,
                     y = button5_y - 2,
                     width  = 155,
@@ -2172,8 +1932,6 @@ def place_stop_button():
 
     Stop_button["command"] = lambda: stop_button_command()
 
-
-
 def place_background(root, width, height):
     Background = ttk.Label(root, background = background_color, relief = 'flat')
     Background.place(x = 0, 
@@ -2181,9 +1939,8 @@ def place_background(root, width, height):
                      width  = width,
                      height = height)
 
-# ---------------------- /GUI related ----------------------
 
-# ---------------------- /Functions ----------------------
+# ---------------------- /GUI related ----------------------
 
 
 def apply_windows_dark_bar(window_root):
