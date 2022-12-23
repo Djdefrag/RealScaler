@@ -36,7 +36,6 @@ RealESRScaler is completely written in Python, from backend to frontend. Externa
     - [ ] any AMD >= Radeon HD 7000 series
     - [ ] any Intel HD Integrated >= 4th-gen core
     - [ ] any NVIDIA >=  GTX 600 series
-- [ ] CPU [works without GPU, but is very slow]
 
 ## Features.
 
