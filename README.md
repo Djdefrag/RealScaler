@@ -66,7 +66,18 @@ RealESRScaler is completely written in Python, from backend to frontend. Externa
 - [ ] Filenames with non-latin symbols (for example kangy, cyrillic etc.) not supported - [Temp solution] rename files like "image" or "video"
 - [ ] When running ReSR.Scaler as Administrator, drag&drop is not working
 
-### Examples.
+### Some Examples.
+#### Videos
+
+![boku-no-hero-my-hero-academia](https://user-images.githubusercontent.com/32263112/209639439-94c8774d-354e-4d56-9123-e1aa4af95e08.gif)
+
+https://user-images.githubusercontent.com/32263112/209639499-83eb4609-a842-43f9-b8a2-9fffd23e1d2c.mp4
+
+
+https://user-images.githubusercontent.com/32263112/209639569-c201a965-c6bf-4b7c-9904-61114b5bf4d5.mp4
+
+
+#### Images
 ![teaser](https://user-images.githubusercontent.com/32263112/202862469-ef70b5cc-3a23-496d-b4ae-59eb7fbd5a32.jpg)
 
 ![test](https://user-images.githubusercontent.com/32263112/203076458-71bf97c0-8d40-462c-b56c-7106b911e3ef.png)
