@@ -11,6 +11,9 @@
     <img src="https://user-images.githubusercontent.com/32263112/208719628-59c9a4cc-d22c-4456-9c0c-dff5b1593aa5.PNG"> </a> 
 </div>
 
+## What is RealESRScaler?
+RealESRScaler is a Windows app that uses Real-ESRGAN artificial intelligence to enhance, enlarge and reduce noise in photographs and videos.
+
 ## Other AI projects.🤓
 
 https://github.com/Djdefrag/QualityScaler / QualityScaler - image/video AI upscaler app (BSRGAN)
@@ -72,7 +75,6 @@ RealESRScaler is completely written in Python, from backend to frontend. Externa
 ![boku-no-hero-my-hero-academia](https://user-images.githubusercontent.com/32263112/209639439-94c8774d-354e-4d56-9123-e1aa4af95e08.gif)
 
 https://user-images.githubusercontent.com/32263112/209639499-83eb4609-a842-43f9-b8a2-9fffd23e1d2c.mp4
-
 
 https://user-images.githubusercontent.com/32263112/209639569-c201a965-c6bf-4b7c-9904-61114b5bf4d5.mp4
 
