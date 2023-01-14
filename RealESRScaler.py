@@ -359,8 +359,11 @@ def find_by_relative_path(relative_path):
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
 
+def image_read(image_to_prepare, flags=cv2.IMREAD_COLOR):
+    return cv2.imdecode(np.fromfile(image_to_prepare, dtype=np.uint8), flags)
+
 def adapt_image_to_show(image_to_prepare):
-    old_image     = cv2.imread(image_to_prepare)
+    old_image     = image_read(image_to_prepare)
     actual_width  = old_image.shape[1]
     actual_height = old_image.shape[0]
 
@@ -378,7 +381,7 @@ def adapt_image_to_show(image_to_prepare):
         resized_image    = cv2.resize(old_image,
                                    (new_width, new_height),
                                    interpolation = interpolation_mode)
-        cv2.imwrite("temp.png", resized_image)
+        image_write("temp.png", resized_image)
         return "temp.png"
     else:
         new_width        = round(old_image.shape[1])
@@ -386,7 +389,7 @@ def adapt_image_to_show(image_to_prepare):
         resized_image    = cv2.resize(old_image,
                                    (new_width, new_height),
                                    interpolation = interpolation_mode)
-        cv2.imwrite("temp.png", resized_image)
+        image_write("temp.png", resized_image)
         return "temp.png"
 
 def prepare_output_filename(img, AI_model, target_file_extension):
@@ -414,16 +417,21 @@ def read_log_file():
 
 # IMAGE
 
+def image_write(path, image_data):
+    _, file_extension = os.path.splitext(path)
+    r, buff = cv2.imencode(file_extension, image_data)
+    buff.tofile(path)
+
 def resize_image(image_path, resize_factor, target_file_extension):
     new_image_path = (os.path.splitext(image_path)[0] + "_resized" + target_file_extension).strip()
 
-    old_image = cv2.imread(image_path.strip(), cv2.IMREAD_UNCHANGED)
+    old_image = image_read(image_path.strip(), cv2.IMREAD_UNCHANGED)
     new_width = int(old_image.shape[1] * resize_factor)
     new_height = int(old_image.shape[0] * resize_factor)
 
     resized_image = cv2.resize(old_image, (new_width, new_height), 
                                 interpolation = interpolation_mode)    
-    cv2.imwrite(new_image_path, resized_image)
+    image_write(new_image_path, resized_image)
 
 def resize_image_list(image_list, resize_factor, target_file_extension):
     files_to_delete   = []
@@ -492,11 +500,11 @@ def video_reconstruction_by_frames(input_video_path, frames_upscaled_list, AI_mo
 def resize_frame(image_path, new_width, new_height, target_file_extension):
     new_image_path = image_path.replace('.jpg', "" + target_file_extension)
     
-    old_image = cv2.imread(image_path.strip(), cv2.IMREAD_UNCHANGED)
+    old_image = image_read(image_path.strip(), cv2.IMREAD_UNCHANGED)
 
     resized_image = cv2.resize(old_image, (new_width, new_height), 
                                 interpolation = interpolation_mode)    
-    cv2.imwrite(new_image_path, resized_image)
+    image_write(new_image_path, resized_image)
 
 def resize_frame_list(image_list, resize_factor, target_file_extension, cpu_number):
     downscaled_images = []
@@ -1045,7 +1053,7 @@ def prepare_model(AI_model, device, half_precision):
 
 def reverse_split_multiple_frames(list_of_tiles_list, frames_upscaled_list):
     for index in range(len(frames_upscaled_list)):
-        cv2.imwrite(frames_upscaled_list[index], reunion_image(list_of_tiles_list[index]))              
+        image_write(frames_upscaled_list[index], reunion_image(list_of_tiles_list[index]))              
 
 def upscale_frame_and_save(frame, model, result_path, 
                             tiles_resolution, device, 
@@ -1054,15 +1062,15 @@ def upscale_frame_and_save(frame, model, result_path,
     used_tiles       = False
     backend          = torch.device(torch_directml.device(device))
 
-    img_tmp          = cv2.imread(frame)
+    img_tmp          = image_read(frame)
     image_resolution = max(img_tmp.shape[1], img_tmp.shape[0])
     num_tiles        = image_resolution/tiles_resolution
 
     if num_tiles <= 1:
         with torch.no_grad():
-            img_adapted     = cv2.imread(frame, cv2.IMREAD_UNCHANGED)
+            img_adapted     = image_read(frame, cv2.IMREAD_UNCHANGED)
             img_upscaled, _ = enhance(model, img_adapted, backend, half_precision)
-            cv2.imwrite(result_path, img_upscaled)
+            image_write(result_path, img_upscaled)
     else:
         used_tiles = True
 
@@ -1073,9 +1081,9 @@ def upscale_frame_and_save(frame, model, result_path,
         tiles = img_cutter(frame, num_tiles)
         with torch.no_grad():
             for tile in tiles:
-                tile_adapted  = cv2.imread(tile.filename, cv2.IMREAD_UNCHANGED)
+                tile_adapted  = image_read(tile.filename, cv2.IMREAD_UNCHANGED)
                 tile_upscaled, _ = enhance(model, tile_adapted, backend, half_precision)
-                cv2.imwrite(tile.filename, tile_upscaled)
+                image_write(tile.filename, tile_upscaled)
                 tile.image = Image.open(tile.filename)
                 tile.coords = (tile.coords[0] * 4, 
                                 tile.coords[1] * 4)
@@ -1155,16 +1163,16 @@ def upscale_image_and_save(img, model, result_path,
                             tiles_resolution, 
                             upscale_factor, 
                             device, half_precision):
-    img_tmp          = cv2.imread(img)
+    img_tmp          = image_read(img)
     image_resolution = max(img_tmp.shape[1], img_tmp.shape[0])
     num_tiles        = image_resolution/tiles_resolution
     backend          = torch.device(torch_directml.device(device))
 
     if num_tiles <= 1:
         with torch.no_grad():
-            img_adapted     = cv2.imread(img, cv2.IMREAD_UNCHANGED)
+            img_adapted     = image_read(img, cv2.IMREAD_UNCHANGED)
             img_upscaled, _ = enhance(model, img_adapted, backend, half_precision)
-            cv2.imwrite(result_path, img_upscaled)
+            image_write(result_path, img_upscaled)
     else:
         num_tiles = round(num_tiles)
         if (num_tiles % 2) != 0: num_tiles += 1
@@ -1173,14 +1181,14 @@ def upscale_image_and_save(img, model, result_path,
         tiles = img_cutter(img, num_tiles)
         with torch.no_grad():
             for tile in tiles:
-                tile_adapted  = cv2.imread(tile.filename, cv2.IMREAD_UNCHANGED)
+                tile_adapted  = image_read(tile.filename, cv2.IMREAD_UNCHANGED)
                 tile_upscaled, _ = enhance(model, tile_adapted, backend, half_precision)
-                cv2.imwrite(tile.filename, tile_upscaled)
+                image_write(tile.filename, tile_upscaled)
                 tile.image = Image.open(tile.filename)
                 tile.coords = (tile.coords[0] * upscale_factor, 
                                 tile.coords[1] * upscale_factor)
     
-        cv2.imwrite(result_path, reunion_image(tiles))
+        image_write(result_path, reunion_image(tiles))
 
         to_delete = []
         for tile in tiles: to_delete.append(tile.filename)
@@ -1512,7 +1520,7 @@ def show_video_in_GUI(video_path):
     while(cap.isOpened()):
         ret, frame = cap.read()
         if ret == False: break
-        cv2.imwrite(fist_frame, frame)
+        image_write(fist_frame, frame)
         break
     cap.release()
 
@@ -1520,8 +1528,8 @@ def show_video_in_GUI(video_path):
 
     global image
     image = tk.PhotoImage(file = resized_image_to_show)
-    resized_image_to_show_width = round(cv2.imread(resized_image_to_show).shape[1])
-    resized_image_to_show_height = round(cv2.imread(resized_image_to_show).shape[0])
+    resized_image_to_show_width = round(image_read(resized_image_to_show).shape[1])
+    resized_image_to_show_height = round(image_read(resized_image_to_show).shape[0])
     image_x_center = 30 + left_bar_width + drag_drop_width/2 - resized_image_to_show_width/2
     image_y_center = drag_drop_height/2 - resized_image_to_show_height/2
 
@@ -1598,7 +1606,7 @@ def show_list_images_in_GUI(image_list):
     for elem in image_list:
         counter_img += 1
         if counter_img <= 8:
-            img     = cv2.imread(elem.strip())
+            img     = image_read(elem.strip())
             width   = round(img.shape[1])
             height  = round(img.shape[0])
             img_name = str(elem.split("/")[-1])
@@ -1646,8 +1654,8 @@ def show_image_in_GUI(original_image):
 
     global image
     image = tk.PhotoImage(file = resized_image_to_show)
-    resized_image_to_show_width = round(cv2.imread(resized_image_to_show).shape[1])
-    resized_image_to_show_height = round(cv2.imread(resized_image_to_show).shape[0])
+    resized_image_to_show_width = round(image_read(resized_image_to_show).shape[1])
+    resized_image_to_show_height = round(image_read(resized_image_to_show).shape[0])
     image_x_center = 30 + left_bar_width + drag_drop_width/2 - resized_image_to_show_width/2
     image_y_center = drag_drop_height/2 - resized_image_to_show_height/2
 
@@ -1672,8 +1680,8 @@ def show_image_in_GUI(original_image):
                       height = resized_image_to_show_height)
 
     img_name     = str(original_image.split("/")[-1])
-    width        = round(cv2.imread(original_image).shape[1])
-    height       = round(cv2.imread(original_image).shape[0])
+    width        = round(image_read(original_image).shape[1])
+    height       = round(image_read(original_image).shape[0])
 
     image_info_label = ttk.Label(root,
                                   font       = bold11,
