@@ -8,7 +8,7 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://user-images.githubusercontent.com/32263112/208719628-59c9a4cc-d22c-4456-9c0c-dff5b1593aa5.PNG"> </a> 
+    <img src="https://user-images.githubusercontent.com/32263112/212532799-5cd68c4e-5535-4145-99e6-8edce8211db2.PNG"> </a> 
 </div>
 
 ## What is RealESRScaler?
