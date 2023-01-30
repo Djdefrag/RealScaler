@@ -25,12 +25,13 @@ Real-ESRGAN - https://github.com/xinntao/Real-ESRGAN
 
 ## How is made. 🛠
 
-RealESRScaler is completely written in Python, from backend to frontend. External packages are:
-- [ ] AI  -> Pytorch-directml
-- [ ] GUI -> Tkinter / Tkdnd / Sv_ttk
-- [ ] Image/video -> OpenCV / Moviepy
-- [ ] Packaging   -> Pyinstaller
-- [ ] Miscellaneous -> Pywin32 / Win32mica / split_image
+RealESRScaler is completely written in Python, from backend to frontend. 
+External packages are:
+- [ ] AI  -> torch-directml
+- [ ] GUI -> tkinter / tkdnd / sv_ttk
+- [ ] Image/video -> openCV / moviepy
+- [ ] Packaging   -> pyinstaller
+- [ ] Miscellaneous -> pywin32 / win32mica
 
 ## Requirements. 🤓
 - [ ] Windows 11 / Windows 10
