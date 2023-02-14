@@ -1,7 +1,7 @@
 <div align="center">
     <br>
     <img src="https://user-images.githubusercontent.com/32263112/202846672-027bc15c-8db1-424c-b241-5b466e66c66e.png" width="175"> </a> 
-    <br><br> RealESRScaler - image/video AI upscaler app (Real-ESRGAN) <br><br>
+    <br><br> RealScaler - image/video AI upscaler app (Real-ESRGAN) <br><br>
     <a href="https://jangystudio.itch.io/realesrscaler">
          <img src="https://user-images.githubusercontent.com/86362423/162710522-c40c4f39-a6b9-48bc-84bc-1c6b78319f01.png" width="200">
     </a>
@@ -11,8 +11,8 @@
     <img src="https://user-images.githubusercontent.com/32263112/215465478-03995d56-4279-4d79-8936-030be39e6343.PNG"> </a> 
 </div>
 
-## What is RealESRScaler?
-RealESRScaler is a Windows app that uses Real-ESRGAN artificial intelligence to enhance, enlarge and reduce noise in photographs and videos.
+## What is RealScaler?
+RealScaler is a Windows app that uses Real-ESRGAN artificial intelligence to enhance, enlarge and reduce noise in photographs and videos.
 
 ## Other AI projects.🤓
 
@@ -25,7 +25,7 @@ Real-ESRGAN - https://github.com/xinntao/Real-ESRGAN
 
 ## How is made. 🛠
 
-RealESRScaler is completely written in Python, from backend to frontend. 
+RealScaler is completely written in Python, from backend to frontend. 
 External packages are:
 - [ ] AI  -> torch / torch-directml
 - [ ] GUI -> tkinter / tkdnd / sv_ttk
@@ -68,7 +68,7 @@ External packages are:
 - [x] Windows10 - the app starts with white colored navbar instead of dark
 - [x] Upscaling multiple images doesn't free GPU Vram, so the it is very likely that the process will fail when the gpu memory fills up
 - [ ] Filenames with non-latin symbols (for example kangy, cyrillic etc.) not supported - [Temp solution] rename files like "image" or "video"
-- [ ] When running ReSR.Scaler as Administrator, drag&drop is not working
+- [ ] When running RealScaler as Administrator, drag&drop is not working
 
 ### Some Examples.
 #### Videos
