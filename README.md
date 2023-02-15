@@ -62,7 +62,7 @@ External packages are:
 - [ ] Update libraries 
     - [x] Python 3.10 (expecting ~10% more performance) 
     - [ ] Python 3.11 (expecting ~30% more performance)
-    - [x] pytorch-directml
+    - [ ] following pytorch updates
 
 ## Known bugs.
 - [x] Windows10 - the app starts with white colored navbar instead of dark
