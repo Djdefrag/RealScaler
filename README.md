@@ -18,6 +18,8 @@ RealScaler is a Windows app that uses Real-ESRGAN artificial intelligence to enh
 
 https://github.com/Djdefrag/QualityScaler / QualityScaler - image/video AI upscaler app (BSRGAN)
 
+https://github.com/Djdefrag/FluidFrames.RIFE / FluidFrames.RIFE - video AI interpolation app (RIFE-HDv3)
+
 
 ## Credits.
 
