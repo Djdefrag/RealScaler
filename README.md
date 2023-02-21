@@ -8,7 +8,7 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://user-images.githubusercontent.com/32263112/215465478-03995d56-4279-4d79-8936-030be39e6343.PNG"> </a> 
+    <img src="https://user-images.githubusercontent.com/32263112/220398856-39348d77-cbd5-40bb-b22c-92d17d3e9ab0.PNG"> </a> 
 </div>
 
 ## What is RealScaler?
@@ -69,7 +69,7 @@ External packages are:
 ## Known bugs.
 - [x] Windows10 - the app starts with white colored navbar instead of dark
 - [x] Upscaling multiple images doesn't free GPU Vram, so the it is very likely that the process will fail when the gpu memory fills up
-- [ ] Filenames with non-latin symbols (for example kangy, cyrillic etc.) not supported - [Temp solution] rename files like "image" or "video"
+- [x] Filenames with non-latin symbols (for example kangy, cyrillic etc.) not supported - [Temp solution] rename files like "image" or "video"
 - [ ] When running RealScaler as Administrator, drag&drop is not working
 
 ### Some Examples.
