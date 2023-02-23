@@ -77,8 +77,10 @@ External packages are:
 
 ![boku-no-hero-my-hero-academia](https://user-images.githubusercontent.com/32263112/209639439-94c8774d-354e-4d56-9123-e1aa4af95e08.gif)
 
+RealESRGANx4 - upscaled in 3 minutes and 23 seconds
 https://user-images.githubusercontent.com/32263112/209639499-83eb4609-a842-43f9-b8a2-9fffd23e1d2c.mp4
 
+RealESR_Gx4 - upscaled in 57 seconds
 https://user-images.githubusercontent.com/32263112/209639569-c201a965-c6bf-4b7c-9904-61114b5bf4d5.mp4
 
 
