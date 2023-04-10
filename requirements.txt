@@ -1,5 +1,4 @@
 #AI
-opencv-python-headless
 torch-directml
 
 #GUI
@@ -11,3 +10,4 @@ win32mica
 pyinstaller
 pyinstaller-hooks-contrib
 moviepy
+opencv-python-headless
