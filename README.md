@@ -57,24 +57,21 @@ External packages are:
 - [x] Compatible video  - mp4, wemb, gif, mkv, flv, avi, mov, qt 
 
 ## Next steps. 🤫
-
-- [ ] Update 2.0 (now under development)
+- [ ] 1.X versions
+    - [x] Switch to Pytorch-directml to support all Directx12 compatible gpu (AMD, Intel, Nvidia)
+    - [x] New GUI with Windows 11 style
+    - [x] Include audio for upscaled video
+    - [x] Optimizing video frame resize and extraction speed
+    - [x] Multi GPU support (for pc with double GPU, integrated + dedicated)
+    - [x] Python 3.10 (expecting ~10% more performance)
+- [ ] 2.X versions (now under development)
     - [ ] Python 3.11 (expecting ~30% more performance)
-    - [ ] torch/torch-directml 2.0 (more performance)
-    - [ ] a new completely redesigned graphical interface, with many more options for the user
-    - [ ] upscaling of images and videos at once (currently it is possible to upscale a single image, a list of images or a single video)
-    - [ ] upscale multiple videos at once
-- [x] Switch to Pytorch-directml to support all Directx12 compatible gpu (AMD, Intel, Nvidia)
-- [x] New GUI with Windows 11 style
-- [x] Include audio for upscaled video
-- [x] Optimizing video frame resize and extraction speed
-- [x] Multi GPU support (for pc with double GPU, integrated + dedicated)
-- [x] Python 3.10 (expecting ~10% more performance)
+    - [ ] Torch/torch-directml 2.0 (expecting ~20% more performance)
+    - [ ] New, completely redesigned graphical interface, with more options for the user
+    - [ ] Upscaling images and videos at once (currently it is possible to upscale images or single video)
+    - [ ] Upscale multiple videos at once
 
 ## Known bugs.
-- [x] Windows10 - the app starts with white colored navbar instead of dark
-- [x] Upscaling multiple images doesn't free GPU Vram, so the it is very likely that the process will fail when the gpu memory fills up
-- [x] Filenames with non-latin symbols (for example kangy, cyrillic etc.) not supported - [Temp solution] rename files like "image" or "video"
 - [ ] When running RealScaler as Administrator, drag&drop is not working
 
 ### Some Examples.
