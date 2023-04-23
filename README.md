@@ -11,8 +11,6 @@
     <img src="https://user-images.githubusercontent.com/32263112/233851564-d8216cdd-b4bf-4d78-80ee-f2fe25fec78c.png"> </a> 
 </div>
 
-<img width="563" alt="jGhHXX" src="https://user-images.githubusercontent.com/32263112/233851564-d8216cdd-b4bf-4d78-80ee-f2fe25fec78c.png">
-
 
 ## What is RealScaler?
 RealScaler is a Windows app that uses Real-ESRGAN artificial intelligence to enhance, enlarge and reduce noise in photographs and videos.
