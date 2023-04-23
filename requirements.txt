@@ -2,12 +2,9 @@
 torch-directml
 
 #GUI
-python-tkdnd
-ttkwidgets
+customtkinter
 win32mica
 
 #UTILS
-pyinstaller
-pyinstaller-hooks-contrib
 moviepy
 opencv-python-headless
