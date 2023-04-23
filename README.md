@@ -8,8 +8,10 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://user-images.githubusercontent.com/32263112/230857474-334c85ae-2552-489c-87fa-8e89d16038e8.PNG"> </a> 
+    <img src="https://user-images.githubusercontent.com/32263112/233851564-d8216cdd-b4bf-4d78-80ee-f2fe25fec78c.png"> </a> 
 </div>
+
+<img width="563" alt="jGhHXX" src="https://user-images.githubusercontent.com/32263112/233851564-d8216cdd-b4bf-4d78-80ee-f2fe25fec78c.png">
 
 
 ## What is RealScaler?
@@ -31,10 +33,9 @@ Real-ESRGAN - https://github.com/xinntao/Real-ESRGAN
 RealScaler is completely written in Python, from backend to frontend. 
 External packages are:
 - AI  -> torch / torch-directml
-- GUI -> tkinter / tkdnd / sv_ttk
+- GUI -> customtkinter / win32mica
 - Image/video -> openCV / moviepy
-- Packaging   -> pyinstaller
-- Miscellaneous -> pywin32 / win32mica
+- Packaging   -> pyinstaller / upx
 
 ## Requirements. 🤓
 - Windows 11 / Windows 10
@@ -45,14 +46,11 @@ External packages are:
     - any NVIDIA >=  GTX 600 series
 
 ## Features.
-
 - [x] Easy to use GUI
-- [x] Image/list of images upscale
-- [x] Video upscale
-- [x] Drag&drop files [image/multiple images/video]
+- [x] Images and Videos upscale
 - [x] Automatic image tiling and merging to avoid gpu VRAM limitation
 - [x] Resize image/video before upscaling
-- [x] Multiple gpu backend
+- [x] Multiple Gpu support
 - [x] Compatible images - png, jpeg, bmp, webp, tif  
 - [x] Compatible video  - mp4, wemb, gif, mkv, flv, avi, mov, qt 
 
@@ -65,14 +63,13 @@ External packages are:
     - [x] Multi GPU support (for pc with double GPU, integrated + dedicated)
     - [x] Python 3.10 (expecting ~10% more performance)
 - [ ] 2.X versions (now under development)
+    - [x] New, completely redesigned graphical interface based on @customtkinter
+    - [x] Upscaling images and videos at once (currently it is possible to upscale images or single video)
+    - [x] Upscale multiple videos at once
     - [ ] Python 3.11 (expecting ~30% more performance)
     - [ ] Torch/torch-directml 2.0 (expecting ~20% more performance)
-    - [ ] New, completely redesigned graphical interface, with more options for the user
-    - [ ] Upscaling images and videos at once (currently it is possible to upscale images or single video)
-    - [ ] Upscale multiple videos at once
 
 ## Known bugs.
-- [ ] When running RealScaler as Administrator, drag&drop is not working
 
 ### Some Examples.
 #### Videos
