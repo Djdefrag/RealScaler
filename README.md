@@ -8,7 +8,7 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://user-images.githubusercontent.com/32263112/233851564-d8216cdd-b4bf-4d78-80ee-f2fe25fec78c.png"> </a> 
+    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/8a2a4a83-82e5-483a-8e2e-ca59067b276a"> </a> 
 </div>
 
 
@@ -65,11 +65,6 @@ External packages are:
     - [x] Upscale multiple videos at once
     - [ ] Python 3.11 (expecting ~30% more performance)
     - [ ] Torch/torch-directml 2.0 (expecting ~20% more performance)
-
-## Benchmarks.
-<img width="582" alt="dati" src="https://user-images.githubusercontent.com/32263112/233958042-d7519c9b-461c-4f2f-acbb-02f921e2dd1d.PNG">
-<img width="723" alt="aaaa" src="https://user-images.githubusercontent.com/32263112/233958139-8bc97050-85cc-4e1d-bae6-bb9bdedb678e.PNG">
-
 
 ### Some Examples.
 #### Videos
