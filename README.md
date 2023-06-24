@@ -37,10 +37,7 @@ External packages are:
 ## Requirements. 🤓
 - Windows 11 / Windows 10
 - RAM >= 8Gb
-- Directx12 compatible GPU:
-    - any AMD >= Radeon HD 7000 series
-    - any Intel HD Integrated >= 4th-gen core
-    - any NVIDIA >=  GTX 600 series
+- Any Directx12 compatible GPU with >= 4GB VRAM
 
 ## Features.
 - [x] Easy to use GUI
