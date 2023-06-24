@@ -42,13 +42,14 @@ from PIL import Image
 from win32mica import MICAMODE, ApplyMica
 
 app_name = "RealScaler"
-version  = "2.1"
+version  = "2.2"
 
-githubme = "https://github.com/Djdefrag/ReSRScaler"
-itchme   = "https://jangystudio.itch.io/realesrscaler"
+githubme   = "https://github.com/Djdefrag/ReSRScaler"
+itchme     = "https://jangystudio.itch.io/realesrscaler"
+telegramme = "https://linktr.ee/j3ngystudio"
 
-half_precision       = True
-AI_models_list       = [ 'RealESR_Gx4', 'RealSRx4_Anime', 'RealESRGANx4', 'RealESRNetx4']
+AI_models_list       = [ 'RealESR_Gx4', 'RealSRx4_Anime', 
+                        'RealESRGANx4', 'RealESRNetx4']
 file_extension_list  = [ '.png', '.jpg', '.jp2', '.bmp', '.tiff' ]
 device_list_names    = []
 device_list          = []
@@ -59,13 +60,11 @@ gpus_found           = torch_directml.device_count()
 resize_algorithm     = cv2.INTER_AREA
 
 offset_y_options = 0.1125
-option_y_1       = 0.705
-option_y_2       = option_y_1 + offset_y_options
-option_y_3       = option_y_2 + offset_y_options
-option_y_4       = option_y_1
-option_y_5       = option_y_4 + offset_y_options
-option_y_6       = option_y_5 + offset_y_options
+row1_y           = 0.705
+row2_y           = row1_y + offset_y_options
+row3_y           = row2_y + offset_y_options
 
+app_name_color    = "#4169E1"
 transparent_color = "#080808"
 
 # Classes and utils -------------------
@@ -303,6 +302,8 @@ def opengithub(): webbrowser.open(githubme, new=1)
 
 def openitch(): webbrowser.open(itchme, new=1)
 
+def opentelegram(): webbrowser.open(telegramme, new=1)
+
 def is_Windows11():
     if windows_subversion >= 22000: return True
 
@@ -426,7 +427,7 @@ def show_error(exception):
 def extract_frames_from_video(video_path):
     video_frames_list = []
     cap          = cv2.VideoCapture(video_path)
-    frame_rate   = int(cap.get(cv2.CAP_PROP_FPS))
+    frame_rate   = cap.get(cv2.CAP_PROP_FPS)
     cap.release()
 
     # extract frames
@@ -448,7 +449,7 @@ def extract_frames_from_video(video_path):
 def video_reconstruction_by_frames(input_video_path, frames_upscaled_list, 
                                    selected_AI_model, resize_factor, cpu_number):
     cap          = cv2.VideoCapture(input_video_path)
-    frame_rate   = int(cap.get(cv2.CAP_PROP_FPS))
+    frame_rate   = cap.get(cv2.CAP_PROP_FPS)
     cap.release()
 
     upscaled_video_path = prepare_output_video_filename(input_video_path, selected_AI_model, resize_factor)
@@ -916,6 +917,11 @@ def stop_thread():
     # to stop a thread execution
     stop = 1 + "x"
 
+def stop_upscale_process():
+    global process_upscale_orchestrator
+    process_upscale_orchestrator.terminate()
+    process_upscale_orchestrator.join()
+
 def check_upscale_steps():
     time.sleep(3)
     try:
@@ -923,6 +929,7 @@ def check_upscale_steps():
             step = read_log_file()
             if "All files completed" in step:
                 info_message.set(step)
+                stop_upscale_process()
                 remove_temp_files()
                 stop_thread()
             elif "Error while upscaling" in step:
@@ -931,11 +938,12 @@ def check_upscale_steps():
                 stop_thread()
             elif "Stopped upscaling" in step:
                 info_message.set("Stopped upscaling")
+                stop_upscale_process()
                 remove_temp_files()
                 stop_thread()
             else:
                 info_message.set(step)
-            time.sleep(3)
+            time.sleep(2)
     except:
         place_upscale_button()
 
@@ -944,11 +952,6 @@ def update_process_status(actual_process_phase):
     write_in_log_file(actual_process_phase) 
 
 def stop_button_command():
-    global process_upscale_orchestrator
-    process_upscale_orchestrator.terminate()
-    process_upscale_orchestrator.join()
-    
-    # this will stop thread that check upscaling steps
     write_in_log_file("Stopped upscaling") 
 
 def upscale_button_function(): 
@@ -965,27 +968,23 @@ def upscale_button_function():
     remove_file(app_name + ".log")
     
     if user_input_checks():
-        write_in_log_file("Loading")
         info_message.set("Loading")
+        write_in_log_file("Loading")
 
         print("=================================================")
         print("> Starting upscale:")
         print("  Files to upscale: "   + str(len(selected_file_list)))
         print("  Selected AI model: "  + str(selected_AI_model))
-        print("  Selected AI device: " + str(selected_AI_device))
-        print("  Selected output file extension: " + str(selected_output_file_extension))
-        print("  GPU VRAM: "           + str(int(tiles_resolution/100)) + "GB")
-        print("  Tiles resolution: "   + str(tiles_resolution) + "x" + str(tiles_resolution) + "px")
+        print("  AI half precision: "  + str(half_precision))
+        print("  Selected GPU: "       + str(torch_directml.device_name(selected_AI_device)))
+        print("  Selected output file extension: "           + str(selected_output_file_extension))
+        print("  Tiles resolution for selected GPU VRAM: "   + str(tiles_resolution) + "x" + str(tiles_resolution) + "px")
         print("  Resize factor: "      + str(int(resize_factor*100)) + "%")
         print("  Cpu number: "         + str(cpu_number))
         print("=================================================")
 
-        if   "x2" in selected_AI_model: upscale_factor = 2
-        elif "x4" in selected_AI_model: upscale_factor = 4 
+        upscale_factor = 4 
         backend = torch.device(torch_directml.device(selected_AI_device))
-
-        if selected_AI_model == 'RealESR_Gx4': tiles_resolution = tiles_resolution * 2
-        elif selected_AI_model == 'RealSRx4_Anime': tiles_resolution = tiles_resolution * 2
 
         place_stop_button()
 
@@ -1226,6 +1225,7 @@ def upscale_orchestrator(selected_file_list,
 def user_input_checks():
     global selected_file_list
     global selected_AI_model
+    global half_precision
     global selected_AI_device 
     global selected_output_file_extension
     global tiles_resolution
@@ -1234,7 +1234,7 @@ def user_input_checks():
 
     is_ready = True
 
-    # files -------------------------------------------------
+    # Selected files -------------------------------------------------
     try: selected_file_list = scrollable_frame_file_list.get_selected_file_list()
     except:
         info_message.set("No file selected. Please select a file")
@@ -1244,7 +1244,9 @@ def user_input_checks():
         info_message.set("No file selected. Please select a file")
         is_ready = False
 
-    # resize factor -------------------------------------------------
+
+
+    # File resize factor -------------------------------------------------
     try: resize_factor = int(float(str(selected_resize_factor.get())))
     except:
         info_message.set("Resize % must be a numeric value")
@@ -1256,7 +1258,8 @@ def user_input_checks():
         is_ready = False
 
     
-    # vram limiter -------------------------------------------------
+
+    # Tiles resolution -------------------------------------------------
     try: tiles_resolution = 100 * int(float(str(selected_VRAM_limiter.get())))
     except:
         info_message.set("VRAM/RAM value must be a numeric value")
@@ -1264,13 +1267,22 @@ def user_input_checks():
 
     if tiles_resolution > 0: 
         selected_vram = (vram_multiplier * int(float(str(selected_VRAM_limiter.get()))))
-        tiles_resolution = 100 * selected_vram
+
+        if half_precision == True:
+            tiles_resolution = int(selected_vram * 100)
+        elif half_precision == False:
+            tiles_resolution = int(selected_vram * 100 * 0.60)
+
+        if selected_AI_model == 'RealESR_Gx4' or selected_AI_model == 'RealSRx4_Anime':
+            tiles_resolution = tiles_resolution * 2
+
     else:
         info_message.set("VRAM/RAM value must be > 0")
         is_ready = False
 
 
-    # cpu number -------------------------------------------------
+
+    # Cpu number -------------------------------------------------
     try: cpu_number = int(float(str(selected_cpu_number.get())))
     except:
         info_message.set("Cpu number must be a numeric value")
@@ -1280,6 +1292,7 @@ def user_input_checks():
         info_message.set("Cpu number value must be > 0")
         is_ready = False
     else: cpu_number = int(cpu_number)
+
 
 
     return is_ready
@@ -1393,6 +1406,12 @@ def select_AI_from_menu(new_value: str):
     global selected_AI_model    
     selected_AI_model = new_value
 
+def select_AI_mode_from_menu(new_value: str):
+    global half_precision
+
+    if new_value == "Full precision": half_precision = False
+    elif new_value == "Half precision": half_precision = True
+
 def select_AI_device_from_menu(new_value: str):
     global selected_AI_device    
 
@@ -1408,7 +1427,7 @@ def select_output_file_extension_from_menu(new_value: str):
 
 # GUI info functions ---------------------------
 
-def open_info_ai_model():
+def open_info_AI_model():
     info = """This widget allows to choose between different AI: \n
 - RealESR_Gx4 | good upscale quality | fast | enlarge by 4
 - RealESRGANx4 | high upscale quality | slow | enlarge by 4.\n
@@ -1423,7 +1442,7 @@ the faster the upscale will be. \n
 If the list is empty it means the app couldn't find 
 a compatible gpu, try updating your video card driver :)"""
 
-    tk.messagebox.showinfo(title = 'AI device', message = info)
+    tk.messagebox.showinfo(title = 'GPU', message = info)
 
 def open_info_file_extension():
     info = """This widget allows to choose the extension of upscaled image/frame.\n
@@ -1433,7 +1452,7 @@ def open_info_file_extension():
 - bmp | highest quality | slow
 - tiff | highest quality | very slow"""
 
-    tk.messagebox.showinfo(title = 'AI output extension', message = info)
+    tk.messagebox.showinfo(title = 'AI output', message = info)
 
 def open_info_resize():
     info = """This widget allows to choose the resolution input to the AI.\n
@@ -1453,7 +1472,7 @@ def open_info_vram_limiter():
   that do not have dedicated memory, you must select 2 \n
 Selecting a value greater than the actual amount of gpu VRAM may result in upscale failure. """
 
-    tk.messagebox.showinfo(title = 'VRAM limiter GB', message = info)
+    tk.messagebox.showinfo(title = 'GPU Vram (GB)', message = info)
     
 def open_info_cpu():
     info = """This widget allows you to choose how many cpus to devote to the app.\n
@@ -1465,10 +1484,25 @@ Where possible the app will use the number of processors you select, for example
 
     tk.messagebox.showinfo(title = 'Cpu number', message = info)
 
+def open_info_AI_precision():
+    info = """This widget allows you to choose the AI upscaling mode.
+
+- Full precision (>=8GB Vram recommended)
+  > compatible with all GPUs 
+  > uses 50% more GPU memory than Half precision mode
+  > is 30-70% faster than Half precision mode
+  > may result in lower upscale quality
+  
+- Half precision
+  > some old GPUs are not compatible with this mode
+  > uses 50% less GPU memory than Full precision mode
+  > is 30-70% slower than Full precision mode"""
+
+    tk.messagebox.showinfo(title = 'AI mode', message = info)
 
 
 # GUI place functions ---------------------------
-     
+        
 def place_up_background():
     up_background = CTkLabel(master  = window, 
                             text    = "",
@@ -1485,12 +1519,13 @@ def place_up_background():
 def place_app_name():
     app_name_label = CTkLabel(master     = window, 
                               text       = app_name + " " + version,
-                              text_color = "#4169E1",
+                              text_color = app_name_color,
                               font       = bold20,
                               anchor     = "w")
+    
     app_name_label.place(relx = 0.5, rely = 0.56, anchor = tkinter.CENTER)
 
-def place_itch_button():
+def place_itch_button(): 
     itch_button = CTkButton(master     = window, 
                             width      = 30,
                             height     = 30,
@@ -1512,18 +1547,29 @@ def place_github_button():
                             command    = opengithub)
     git_button.place(relx = 0.045, rely = 0.61, anchor = tkinter.CENTER)
 
+def place_telegram_button():
+    telegram_button = CTkButton(master = window, 
+                                width      = 30,
+                                height     = 30,
+                                fg_color   = "black",
+                                text       = "", 
+                                font       = bold11,
+                                image      = logo_telegram,
+                                command    = opentelegram)
+    telegram_button.place(relx = 0.045, rely = 0.67, anchor = tkinter.CENTER)
+
 def place_upscale_button(): 
     upscale_button = CTkButton(master    = window, 
                                 width      = 140,
                                 height     = 30,
                                 fg_color   = "#282828",
                                 text_color = "#E0E0E0",
-                                text       = "UPSCALE",
+                                text       = "UPSCALE", 
                                 font       = bold11,
                                 image      = play_icon,
                                 command    = upscale_button_function)
-    upscale_button.place(relx = 0.8, rely = option_y_6, anchor = tkinter.CENTER)
-
+    upscale_button.place(relx = 0.8, rely = row3_y, anchor = tkinter.CENTER)
+    
 def place_stop_button(): 
     stop_button = CTkButton(master   = window, 
                             width      = 140,
@@ -1534,7 +1580,7 @@ def place_stop_button():
                             font       = bold11,
                             image      = stop_icon,
                             command    = stop_button_command)
-    stop_button.place(relx = 0.8, rely = option_y_6, anchor = tkinter.CENTER)
+    stop_button.place(relx = 0.8, rely = row3_y, anchor = tkinter.CENTER)
 
 def place_AI_menu():
     AI_menu_button = CTkButton(master  = window, 
@@ -1546,7 +1592,7 @@ def place_AI_menu():
                               font     = bold11,
                               corner_radius = 25,
                               anchor  = "center",
-                              command = open_info_ai_model)
+                              command = open_info_AI_model)
 
     AI_menu = CTkOptionMenu(master  = window, 
                             values  = AI_models_list,
@@ -1559,14 +1605,14 @@ def place_AI_menu():
                             dropdown_font = bold11,
                             dropdown_fg_color = "#000000")
 
-    AI_menu_button.place(relx = 0.20, rely = option_y_1 - 0.05, anchor = tkinter.CENTER)
-    AI_menu.place(relx = 0.20, rely = option_y_1, anchor = tkinter.CENTER)
+    AI_menu_button.place(relx = 0.20, rely = row1_y - 0.05, anchor = tkinter.CENTER)
+    AI_menu.place(relx = 0.20, rely = row1_y, anchor = tkinter.CENTER)
 
-def place_AI_device_menu():
+def place_AI_gpu_menu():
     AI_device_button = CTkButton(master  = window, 
                               fg_color   = "black",
                               text_color = "#ffbf00",
-                              text     = "AI device",
+                              text     = "GPU",
                               height   = 23,
                               width    = 130,
                               font     = bold11,
@@ -1586,8 +1632,37 @@ def place_AI_device_menu():
                                     dropdown_font = bold11,
                                     dropdown_fg_color = "#000000")
     
-    AI_device_button.place(relx = 0.20, rely = option_y_2 - 0.05, anchor = tkinter.CENTER)
-    AI_device_menu.place(relx = 0.20, rely = option_y_2, anchor = tkinter.CENTER)
+    AI_device_button.place(relx = 0.5, rely = row1_y - 0.05, anchor = tkinter.CENTER)
+    AI_device_menu.place(relx = 0.5, rely = row1_y, anchor = tkinter.CENTER)
+
+def place_AI_mode_menu():
+    AI_modes = ["Full precision", "Half precision"]
+
+    AI_mode_button = CTkButton(master  = window, 
+                              fg_color   = "black",
+                              text_color = "#ffbf00",
+                              text     = "AI mode",
+                              height   = 23,
+                              width    = 130,
+                              font     = bold11,
+                              corner_radius = 25,
+                              anchor  = "center",
+                              command = open_info_AI_precision)
+
+    AI_mode_menu = CTkOptionMenu(master  = window, 
+                                values   = AI_modes,
+                                width      = 140,
+                                font       = bold11,
+                                height     = 30,
+                                fg_color   = "#000000",
+                                anchor     = "center",
+                                dynamic_resizing = False,
+                                command    = select_AI_mode_from_menu,
+                                dropdown_font = bold11,
+                                dropdown_fg_color = "#000000")
+    
+    AI_mode_button.place(relx = 0.20, rely = row2_y - 0.05, anchor = tkinter.CENTER)
+    AI_mode_menu.place(relx = 0.20, rely = row2_y, anchor = tkinter.CENTER)
 
 def place_file_extension_menu():
     file_extension_button = CTkButton(master  = window, 
@@ -1612,8 +1687,8 @@ def place_file_extension_menu():
                                         dropdown_font = bold11,
                                         dropdown_fg_color = "#000000")
     
-    file_extension_button.place(relx = 0.20, rely = option_y_3 - 0.05, anchor = tkinter.CENTER)
-    file_extension_menu.place(relx = 0.20, rely = option_y_3, anchor = tkinter.CENTER)
+    file_extension_button.place(relx = 0.20, rely = row3_y - 0.05, anchor = tkinter.CENTER)
+    file_extension_menu.place(relx = 0.20, rely = row3_y, anchor = tkinter.CENTER)
 
 def place_resize_factor_textbox():
     resize_factor_button = CTkButton(master  = window, 
@@ -1634,8 +1709,8 @@ def place_resize_factor_textbox():
                                     fg_color   = "#000000",
                                     textvariable = selected_resize_factor)
     
-    resize_factor_button.place(relx = 0.5, rely = option_y_4 - 0.05, anchor = tkinter.CENTER)
-    resize_factor_textbox.place(relx = 0.5, rely  = option_y_4, anchor = tkinter.CENTER)
+    resize_factor_button.place(relx = 0.5, rely = row3_y - 0.05, anchor = tkinter.CENTER)
+    resize_factor_textbox.place(relx = 0.5, rely  = row3_y, anchor = tkinter.CENTER)
 
 def place_vram_textbox():
     vram_button = CTkButton(master  = window, 
@@ -1656,8 +1731,8 @@ def place_vram_textbox():
                             fg_color   = "#000000",
                             textvariable = selected_VRAM_limiter)
 
-    vram_button.place(relx = 0.5, rely = option_y_5 - 0.05, anchor = tkinter.CENTER)
-    vram_textbox.place(relx = 0.5, rely  = option_y_5, anchor = tkinter.CENTER)
+    vram_button.place(relx = 0.5, rely = row2_y - 0.05, anchor = tkinter.CENTER)
+    vram_textbox.place(relx = 0.5, rely  = row2_y, anchor = tkinter.CENTER)
 
 def place_cpu_textbox():
     cpu_button = CTkButton(master  = window, 
@@ -1678,8 +1753,8 @@ def place_cpu_textbox():
                             fg_color   = "#000000",
                             textvariable = selected_cpu_number)
 
-    cpu_button.place(relx = 0.5, rely = option_y_6 - 0.05, anchor = tkinter.CENTER)
-    cpu_textbox.place(relx = 0.5, rely  = option_y_6, anchor = tkinter.CENTER)
+    cpu_button.place(relx = 0.8, rely = row1_y - 0.05, anchor = tkinter.CENTER)
+    cpu_textbox.place(relx = 0.8, rely  = row1_y, anchor = tkinter.CENTER)
 
 def place_loadFile_section():
 
@@ -1736,18 +1811,21 @@ class App():
         window.iconbitmap(find_by_relative_path("Assets" + os.sep + "logo.ico"))
 
         place_up_background()
+
         place_app_name()
         place_itch_button()
         place_github_button()
+        place_telegram_button()
 
         place_AI_menu()
-        place_AI_device_menu()
+        place_AI_mode_menu()
         place_file_extension_menu()
 
-        place_resize_factor_textbox()
+        place_AI_gpu_menu()
         place_vram_textbox()
-        place_cpu_textbox()
+        place_resize_factor_textbox()
 
+        place_cpu_textbox()
         place_message_label()
         place_upscale_button()
 
@@ -1764,34 +1842,33 @@ if __name__ == "__main__":
     window = CTk() 
 
     global selected_file_list
-
     global selected_AI_model
+    global half_precision
     global selected_AI_device 
     global selected_output_file_extension
-
     global tiles_resolution
     global resize_factor
     global cpu_number
 
-
     selected_file_list = []
     selected_AI_model  = AI_models_list[0]
-    selected_output_file_extension = file_extension_list[0]
+    half_precision     = False
     selected_AI_device = 0
 
+    selected_output_file_extension = file_extension_list[0]
+
     info_message = tk.StringVar()
-    selected_AI  = tk.StringVar()
     selected_resize_factor  = tk.StringVar()
     selected_VRAM_limiter   = tk.StringVar()
-    selected_backend        = tk.StringVar()
-    selected_file_extension = tk.StringVar()
     selected_cpu_number     = tk.StringVar()
 
     info_message.set("Hi :)")
 
+    cpu_count = str(int(os.cpu_count()/2))
+
     selected_resize_factor.set("70")
     selected_VRAM_limiter.set("8")
-    selected_cpu_number.set("4")
+    selected_cpu_number.set(cpu_count)
 
     bold8  = CTkFont(family = "Segoe UI", size = 8, weight = "bold")
     bold9  = CTkFont(family = "Segoe UI", size = 9, weight = "bold")
@@ -1801,7 +1878,6 @@ if __name__ == "__main__":
     bold20 = CTkFont(family = "Segoe UI", size = 20, weight = "bold")
     bold21 = CTkFont(family = "Segoe UI", size = 21, weight = "bold")
 
-
     global stop_icon
     global clear_icon
     global play_icon
@@ -1809,6 +1885,7 @@ if __name__ == "__main__":
     global logo_git
     logo_git   = CTkImage(Image.open(find_by_relative_path("Assets" + os.sep + "github_logo.png")), size=(15, 15))
     logo_itch  = CTkImage(Image.open(find_by_relative_path("Assets" + os.sep + "itch_logo.png")),  size=(13, 13))
+    logo_telegram = CTkImage(Image.open(find_by_relative_path("Assets" + os.sep + "telegram_logo.png")),  size=(15, 15))
     stop_icon  = CTkImage(Image.open(find_by_relative_path("Assets" + os.sep + "stop_icon.png")), size=(15, 15))
     play_icon  = CTkImage(Image.open(find_by_relative_path("Assets" + os.sep + "upscale_icon.png")), size=(15, 15))
     clear_icon = CTkImage(Image.open(find_by_relative_path("Assets" + os.sep + "clear_icon.png")), size=(15, 15))
