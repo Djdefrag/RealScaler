@@ -8,7 +8,7 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/8a2a4a83-82e5-483a-8e2e-ca59067b276a"> </a> 
+    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/4e1c0a8a-b02c-4736-9ce1-c548b47f90c2"> </a> 
 </div>
 
 
