@@ -8,7 +8,7 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/4e1c0a8a-b02c-4736-9ce1-c548b47f90c2"> </a> 
+    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/567765b5-0204-4461-b5c8-a027c19f5b75"> </a> 
 </div>
 
 
@@ -30,7 +30,7 @@ Real-ESRGAN - https://github.com/xinntao/Real-ESRGAN
 RealScaler is completely written in Python, from backend to frontend. 
 External packages are:
 - AI  -> torch / torch-directml
-- GUI -> customtkinter / win32mica
+- GUI -> customtkinter
 - Image/video -> openCV / moviepy
 - Packaging   -> pyinstaller / upx
 
@@ -60,6 +60,7 @@ External packages are:
     - [x] New, completely redesigned graphical interface based on @customtkinter
     - [x] Upscaling images and videos at once (currently it is possible to upscale images or single video)
     - [x] Upscale multiple videos at once
+    - [x] Choose upscaled video extension (.mp4, .avi, .webm)
     - [ ] Python 3.11 (expecting ~30% more performance)
     - [ ] Torch/torch-directml 2.0 (expecting ~20% more performance)
 
