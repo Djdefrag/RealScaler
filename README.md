@@ -1,9 +1,11 @@
 <div align="center">
     <br>
     <img src="https://user-images.githubusercontent.com/32263112/202846672-027bc15c-8db1-424c-b241-5b466e66c66e.png" width="175"> </a> 
-    <br><br> RealScaler - fast image/video AI upscaler app (Real-ESRGAN) <br><br>
+    <br><br> RealScaler - image/video AI upscaler app (Real-ESRGAN) <br><br>
     <a href="https://jangystudio.itch.io/realesrscaler">
-         <img src="https://user-images.githubusercontent.com/86362423/162710522-c40c4f39-a6b9-48bc-84bc-1c6b78319f01.png" width="200">
+        <button>
+            <img src="https://static.itch.io/images/badge-color.svg" width="225" height="70">
+        </button>     
     </a>
 </div>
 <br>
