@@ -8,21 +8,19 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/567765b5-0204-4461-b5c8-a027c19f5b75"> </a> 
+    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/c68c0643-8a09-4793-adea-bb8e496f8bf4"> </a> 
 </div>
 
 
 ## What is RealScaler?
-RealScaler is a Windows app that uses Real-ESRGAN artificial intelligence to enhance, enlarge and reduce noise in photographs and videos.
+RealScaler is a Windows app powered by RealESRGAN AI to enhance, enlarge and reduce noise in photographs and videos.
 
 ## Other AI projects.🤓
 
 - https://github.com/Djdefrag/QualityScaler / QualityScaler - image/video AI upscaler app (BSRGAN)
 - https://github.com/Djdefrag/FluidFrames.RIFE / FluidFrames.RIFE - video AI interpolation app (RIFE-HDv3)
 
-
 ## Credits.
-
 Real-ESRGAN - https://github.com/xinntao/Real-ESRGAN
 
 ## How is made. 🛠
@@ -42,8 +40,10 @@ External packages are:
 ## Features.
 - [x] Easy to use GUI
 - [x] Images and Videos upscale
+- [x] Multiple AI models
 - [x] Automatic image tiling and merging to avoid gpu VRAM limitation
-- [x] Resize image/video before upscaling
+- [x] Resize image/video before AI upscaling
+- [x] Interpolation between the original and upscaled image/video
 - [x] Multiple Gpu support
 - [x] Compatible images - png, jpeg, bmp, webp, tif  
 - [x] Compatible video  - mp4, wemb, gif, mkv, flv, avi, mov, qt 
@@ -60,7 +60,8 @@ External packages are:
     - [x] New, completely redesigned graphical interface based on @customtkinter
     - [x] Upscaling images and videos at once (currently it is possible to upscale images or single video)
     - [x] Upscale multiple videos at once
-    - [x] Choose upscaled video extension (.mp4, .avi, .webm)
+    - [x] Choose upscaled video extension
+    - [x] Interpolation between the original and upscaled image/video
     - [ ] Python 3.11 (expecting ~30% more performance)
     - [ ] Torch/torch-directml 2.0 (expecting ~20% more performance)
 
