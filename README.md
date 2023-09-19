@@ -10,7 +10,7 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/c68c0643-8a09-4793-adea-bb8e496f8bf4"> </a> 
+    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/044c4fac-18b0-4038-9024-4b5203ceab0d"> </a> 
 </div>
 
 
@@ -19,7 +19,7 @@ RealScaler is a Windows app powered by RealESRGAN AI to enhance, enlarge and red
 
 ## Other AI projects.🤓
 
-- https://github.com/Djdefrag/QualityScaler / QualityScaler - image/video AI upscaler app (BSRGAN)
+- https://github.com/Djdefrag/QualityScaler / QualityScaler - image/video AI upscaler app
 - https://github.com/Djdefrag/FluidFrames.RIFE / FluidFrames.RIFE - video AI interpolation app (RIFE-HDv3)
 
 ## Credits.
@@ -32,7 +32,7 @@ External packages are:
 - AI  -> torch / torch-directml
 - GUI -> customtkinter
 - Image/video -> openCV / moviepy
-- Packaging   -> pyinstaller / upx
+- Packaging   -> pyinstaller
 
 ## Requirements. 🤓
 - Windows 11 / Windows 10
