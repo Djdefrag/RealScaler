@@ -3,8 +3,8 @@ torch-directml==0.1.13.1.dev230413
 
 #GUI
 customtkinter
-win32mica
 
 #UTILS
+pyinstaller==5.13.2
 moviepy
 opencv-python-headless
