@@ -10,7 +10,7 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/044c4fac-18b0-4038-9024-4b5203ceab0d"> </a> 
+    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/634d7e9d-dce4-4500-9298-fe9b25cf9833"> </a> 
 </div>
 
 
@@ -51,7 +51,7 @@ External packages are:
 - [x] Compatible video  - mp4, wemb, gif, mkv, flv, avi, mov, qt 
 
 ## Next steps. 🤫
-- [ ] 1.X versions
+- [x] 1.X versions
     - [x] Switch to Pytorch-directml to support all Directx12 compatible gpu (AMD, Intel, Nvidia)
     - [x] New GUI with Windows 11 style
     - [x] Include audio for upscaled video
