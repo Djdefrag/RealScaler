@@ -10,7 +10,7 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/634d7e9d-dce4-4500-9298-fe9b25cf9833"> </a> 
+    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/7f88b8b5-3e0c-4d92-bae0-e9277d0f512e"> </a> 
 </div>
 
 
@@ -58,14 +58,19 @@ External packages are:
     - [x] Optimizing video frame resize and extraction speed
     - [x] Multi GPU support (for pc with double GPU, integrated + dedicated)
     - [x] Python 3.10 (expecting ~10% more performance)
-- [ ] 2.X versions (now under development)
+- [ ] 2.X versions
     - [x] New, completely redesigned graphical interface based on @customtkinter
     - [x] Upscaling images and videos at once (currently it is possible to upscale images or single video)
     - [x] Upscale multiple videos at once
     - [x] Choose upscaled video extension
     - [x] Interpolation between the original and upscaled image/video
-    - [ ] Python 3.11 (expecting ~30% more performance)
-    - [ ] Torch/torch-directml 2.0 (expecting ~20% more performance)
+    - [x] Show the remaining time to complete video upscaling
+    - [x] Support for SRVGGNetCompact AI architecture
+    - [x] Metadata extraction and application from original file to upscaled file (via exiftool)
+    - [ ] Python 3.11 (expecting ~30% better performance)
+    - [ ] torch/torch-directml 2.0 (expecting ~20% better performance)
+    - [ ] Python 3.12
+    - [ ] torch/torch-directml 2.1 
 
 ### Some Examples.
 #### Videos
