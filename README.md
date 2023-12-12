@@ -10,7 +10,7 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/020658fa-c1bc-4e71-a705-4c6f33a2596e"> </a> 
+    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/d3268876-4a82-4ecb-96cd-bc80753c6a38"> </a> 
 </div>
 
 ## What is RealScaler?
