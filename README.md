@@ -10,9 +10,8 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/7f88b8b5-3e0c-4d92-bae0-e9277d0f512e"> </a> 
+    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/020658fa-c1bc-4e71-a705-4c6f33a2596e"> </a> 
 </div>
-
 
 ## What is RealScaler?
 RealScaler is a Windows app powered by RealESRGAN AI to enhance, enlarge and reduce noise in photographs and videos.
@@ -32,7 +31,7 @@ External packages are:
 - AI  -> torch / torch-directml
 - GUI -> customtkinter
 - Image/video -> openCV / moviepy
-- Packaging   -> pyinstaller
+- Packaging   -> nuitka
 
 ## Requirements. 🤓
 - Windows 11 / Windows 10
@@ -64,11 +63,13 @@ External packages are:
     - [x] Upscale multiple videos at once
     - [x] Choose upscaled video extension
     - [x] Interpolation between the original and upscaled image/video
+    - [x] More Interpolation levels (Low, Medium, High)
     - [x] Show the remaining time to complete video upscaling
     - [x] Support for SRVGGNetCompact AI architecture
     - [x] Metadata extraction and application from original file to upscaled file (via exiftool)
     - [ ] Python 3.11 (expecting ~30% better performance)
     - [ ] torch/torch-directml 2.0 (expecting ~20% better performance)
+- [ ] 3.X versions
     - [ ] Python 3.12
     - [ ] torch/torch-directml 2.1 
 
