@@ -1,5 +1,6 @@
 
 # Standard library imports
+import os
 import sys
 from shutil          import rmtree as remove_directory
 from timeit          import default_timer as timer
@@ -134,6 +135,8 @@ dark_color = "#080808"
 githubme   = "https://github.com/Djdefrag/ReSRScaler"
 telegramme = "https://linktr.ee/j3ngystudio"
 
+# Remote URL where the AI *.pth assets can be downloaded from.
+REMOTE_AI_URL = "https://zackees.github.io/ai-image-video-models"
 
 # SRVGGNetCompact
 SRVGGNetCompact_vram_multiplier = 1.7
@@ -190,6 +193,14 @@ supported_video_extensions = [
 ]
 
 
+def ensure_downloaded(modelfile: str, outpath: str) -> None:
+    """Download a model file if it doesn't exist."""
+    if os.path.exists(outpath):
+        return  # Already downloaded
+    asset_url = f"{REMOTE_AI_URL}/{modelfile}"
+    from download import download  # Lazy import
+    download(asset_url, outpath)
+
 
 # AI models -------------------
 
@@ -202,7 +213,9 @@ def load_AI_model(
         ) -> any:
     
     write_process_status(processing_queue, f"Loading AI model")
-    model_path = find_by_relative_path(f"AI{os_separator}{selected_AI_model}.pth")
+    model_file = f"{selected_AI_model}.pth"
+    model_path = find_by_relative_path(f"AI{os_separator}{model_file}")
+    ensure_downloaded(model_file, model_path)
 
     if selected_AI_model == 'RealESRGANx4':
         model = RealESRGAN_Net()
