@@ -67,7 +67,6 @@ External packages are:
     - [x] Show the remaining time to complete video upscaling
     - [x] Support for SRVGGNetCompact AI architecture
     - [x] Metadata extraction and application from original file to upscaled file (via exiftool)
-    - [x] Support for SAFMN AI architecture
 - [ ] 3.X versions
     - [ ] New AI engine powered by onnxruntime-directml (https://pypi.org/project/onnxruntime-directml/)
     - [ ] Python 3.11 (~25% performance improvements)
