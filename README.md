@@ -10,11 +10,11 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/d3268876-4a82-4ecb-96cd-bc80753c6a38"> </a> 
+    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/09b29bf9-231d-4e39-b17a-3908625d52d9"> </a> 
 </div>
 
 ## What is RealScaler?
-RealScaler is a Windows app powered by RealESRGAN AI to enhance, upscale and reduce noise in photographs and videos.
+RealScaler is a Windows app powered by RealESRGAN AI to enhance, upscale and de-noise photos and videos.
 
 ## Other AI projects.🤓
 
@@ -28,9 +28,9 @@ Real-ESRGAN - https://github.com/xinntao/Real-ESRGAN
 
 RealScaler is completely written in Python, from backend to frontend. 
 External packages are:
-- AI  -> torch / torch-directml
+- AI  -> torch / onnxruntime-directml
 - GUI -> customtkinter
-- Image/video -> openCV / moviepy
+- Image/video -> OpenCV / moviepy
 - Packaging   -> nuitka
 
 ## Requirements. 🤓
@@ -68,8 +68,10 @@ External packages are:
     - [x] Support for SRVGGNetCompact AI architecture
     - [x] Metadata extraction and application from original file to upscaled file (via exiftool)
 - [ ] 3.X versions
-    - [ ] New AI engine powered by onnxruntime-directml (https://pypi.org/project/onnxruntime-directml/)
-    - [ ] Python 3.11 (~25% performance improvements)
+    - [x] New AI engine powered by onnxruntime-directml (https://pypi.org/project/onnxruntime-directml/)
+    - [x] Python 3.11 (~10% performance improvements)
+    - [x] Display images/videos upscaled resolution in the GUI
+    - [x] FFMPEG 6.1.1 (latest release)
     - [ ] Python 3.12
     - [ ] Video upscaling pause and restart 
 
