@@ -1,12 +1,12 @@
 #AI
-onnx
-onnxconverter_common
 onnxruntime-directml==1.17.3
 
 #GUI
 customtkinter
 
 #UTILS
+numpy==1.26.4
 moviepy
 opencv-python-headless
-Nuitka
+natsort
+pyinstaller==6.9.0
