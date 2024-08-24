@@ -10,14 +10,13 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://github.com/Djdefrag/RealScaler/assets/32263112/09b29bf9-231d-4e39-b17a-3908625d52d9"> </a> 
+    <img src="https://github.com/user-attachments/assets/a9c8e060-c20d-4c57-978d-5cd92b988f62"> </a> 
 </div>
 
 ## What is RealScaler?
 RealScaler is a Windows app powered by RealESRGAN AI to enhance, upscale and de-noise photos and videos.
 
 ## Other AI projects.🤓
-
 - https://github.com/Djdefrag/QualityScaler / QualityScaler - image/video AI upscaler app
 - https://github.com/Djdefrag/FluidFrames.RIFE / FluidFrames.RIFE - video AI interpolation app (RIFE-HDv3)
 
@@ -39,15 +38,16 @@ External packages are:
 - Any Directx12 compatible GPU with >= 4GB VRAM
 
 ## Features.
-- [x] Easy to use GUI
-- [x] Images and Videos upscale
-- [x] Multiple AI models
-- [x] Automatic image tiling and merging to avoid gpu VRAM limitation
-- [x] Resize image/video before AI upscaling
-- [x] Interpolation between the original and upscaled image/video
-- [x] Multiple Gpu support
-- [x] Compatible images - png, jpeg, bmp, webp, tif  
-- [x] Compatible video  - mp4, wemb, gif, mkv, flv, avi, mov, qt 
+- [x] Elegant and easy to use GUI
+- [x] Image and Video upscale
+- [x] Multiple GPUs support
+- [x] Compatible images - jpg, png, tif, bmp, webp, heic
+- [x] Compatible video - mp4, wemb, mkv, flv, gif, avi, mov, mpg, qt, 3gp
+- [x] Automatic image tilling to avoid gpu VRAM limitation
+- [x] Resize image/video before upscaling
+- [x] Interpolation beetween original file and upscaled file
+- [x] Video upscaling STOP&RESUME
+- [x] PRIVACY FOCUSED - no internet connection required / everything is on your PC
 
 ## Next steps. 🤫
 - [x] 1.X versions
@@ -68,12 +68,14 @@ External packages are:
     - [x] Support for SRVGGNetCompact AI architecture
     - [x] Metadata extraction and application from original file to upscaled file (via exiftool)
 - [ ] 3.X versions
-    - [x] New AI engine powered by onnxruntime-directml (https://pypi.org/project/onnxruntime-directml/)
-    - [x] Python 3.11 (~10% performance improvements)
+    - [x] New AI engine powered by onnxruntime-directml (https://github.com/microsoft/onnxruntime))
+    - [x] Python 3.11 (performance improvements)
+    - [x] Python 3.12 (performance improvements)
     - [x] Display images/videos upscaled resolution in the GUI
-    - [x] FFMPEG 6.1.1 (latest release)
-    - [ ] Python 3.12
-    - [ ] Video upscaling pause and restart 
+    - [x] Updated FFMPEG to version 7.x (latest release)
+    - [x] Saving user settings (AI model, GPU, CPU  etc.)
+    - [x] Video multi-threading AI upscale 
+    - [x] Video upscaling STOP&RESUME
 
 ### Some Examples.
 #### Videos
