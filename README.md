@@ -24,13 +24,33 @@ RealScaler is a Windows app powered by RealESRGAN AI to enhance, upscale and de-
 Real-ESRGAN - https://github.com/xinntao/Real-ESRGAN
 
 ## How is made. 🛠
-
 RealScaler is completely written in Python, from backend to frontend. 
-External packages are:
-- AI  -> torch / onnxruntime-directml
-- GUI -> customtkinter
-- Image/video -> OpenCV / moviepy
-- Packaging   -> nuitka
+- [x] pytorch (https://github.com/pytorch/pytorch)
+- [x] onnx (https://github.com/onnx/onnx)
+- [x] onnxconverter-common (https://github.com/microsoft/onnxconverter-common)
+- [x] onnxruntime-directml (https://github.com/microsoft/onnxruntime)
+- [x] customtkinter (https://github.com/TomSchimansky/CustomTkinter)
+- [x] openCV (https://github.com/opencv/opencv)
+- [x] moviepy (https://github.com/Zulko/moviepy)
+- [x] pyInstaller (https://github.com/pyinstaller/pyinstaller)
+
+## Make it work by yourself. 👨‍💻
+Prerequisites.
+- Python installed on your pc (https://www.python.org/downloads/release/python-3119/)
+- VSCode installed on your pc (https://code.visualstudio.com/)
+- AI models downloaded (https://gofile.io/d/yaMlZO)
+- FFMPEG.exe downloaded (https://www.gyan.dev/ffmpeg/builds/) RELEASE BUILD > ffmpeg-release-essentials.7z
+
+Getting started.
+- Download the project on your PC (Green button Code > Download ZIP)
+- Extract the project from the .zip
+- Extract the AI models files in /AI-onnx folder
+- Extract FFMPEG.exe in /Assets folder
+- Open the project with VSCode (Drag&Drop the project directory on VSCode)
+- Click RealScaler.py from left bar (VSCode will ask to install Python plugins)
+- Install dependencies. In VSCode there is the "Terminal" panel, click there and execute the command "pip install -r requirements.txt"
+- Close VSCode and re-open it (this will refresh all the dependecies installed)
+- Click on the "Play button" in the upper right corner of VSCode
 
 ## Requirements. 🤓
 - Windows 11 / Windows 10
