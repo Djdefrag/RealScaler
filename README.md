@@ -10,8 +10,9 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://github.com/user-attachments/assets/a9c8e060-c20d-4c57-978d-5cd92b988f62"> </a> 
+    <img src="https://github.com/user-attachments/assets/54d1662f-5b41-428e-9d24-2864443c4ed5"> </a> 
 </div>
+
 
 ## What is RealScaler?
 RealScaler is a Windows app powered by RealESRGAN AI to enhance, upscale and de-noise photos and videos.
@@ -94,8 +95,15 @@ Getting started.
     - [x] Display images/videos upscaled resolution in the GUI
     - [x] Updated FFMPEG to version 7.x (latest release)
     - [x] Saving user settings (AI model, GPU, CPU  etc.)
-    - [x] Video multi-threading AI upscale 
+    - [x] Video AI multi-threading upscale 
     - [x] Video upscaling STOP&RESUME
+- [ ] 4.X version
+    - [x] Hardware accelerated video encoding (nvenc / amf / qsv)
+    - [x] More video extensions (.mp4 / .mkv / .avi / .mov)
+    - [x] Choose output resolution scaling
+    - [x] Video AI multi-threading improvements
+    - [x] Updated AI-engine (onnxruntime-directml)
+    - [x] Video frames extraction by FFMPEG (x10 times faster)
 
 ### Some Examples.
 #### Videos
