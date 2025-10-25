@@ -1,12 +1,13 @@
 #AI
-onnxruntime-directml==1.17.3
-numpy==1.26.4
+onnxruntime-directml==1.23.0
+numpy
 
 #GUI
 customtkinter
 
 #UTILS
-moviepy
 opencv-python-headless
+Pillow
 natsort
-pyinstaller
+psutil
+pyinstaller==6.16.0
