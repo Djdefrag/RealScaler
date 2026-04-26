@@ -10,7 +10,7 @@
 </div>
 <br>
 <div align="center">
-    <img src="https://github.com/user-attachments/assets/54d1662f-5b41-428e-9d24-2864443c4ed5"> </a> 
+    <img src="https://github.com/user-attachments/assets/13e5794e-812d-40a9-8e46-f4593283fb82"> </a> 
 </div>
 
 
@@ -88,7 +88,7 @@ Getting started.
     - [x] Show the remaining time to complete video upscaling
     - [x] Support for SRVGGNetCompact AI architecture
     - [x] Metadata extraction and application from original file to upscaled file (via exiftool)
-- [ ] 3.X versions
+- [x] 3.X versions
     - [x] New AI engine powered by onnxruntime-directml (https://github.com/microsoft/onnxruntime))
     - [x] Python 3.11 (performance improvements)
     - [x] Python 3.12 (performance improvements)
@@ -97,13 +97,17 @@ Getting started.
     - [x] Saving user settings (AI model, GPU, CPU  etc.)
     - [x] Video AI multi-threading upscale 
     - [x] Video upscaling STOP&RESUME
-- [ ] 4.X version
+- [x] 4.X version
     - [x] Hardware accelerated video encoding (nvenc / amf / qsv)
     - [x] More video extensions (.mp4 / .mkv / .avi / .mov)
     - [x] Choose output resolution scaling
     - [x] Video AI multi-threading improvements
     - [x] Updated AI-engine (onnxruntime-directml)
     - [x] Video frames extraction by FFMPEG (x10 times faster)
+- [ ] 2026.X version
+    - [x] Implement new AI models
+    - [x] App interface % scaling
+    - [ ] TTA upscale mode
 
 ### Some Examples.
 #### Videos
