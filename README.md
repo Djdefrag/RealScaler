@@ -19,7 +19,7 @@ RealScaler is a Windows app powered by RealESRGAN AI to enhance, upscale and de-
 
 ## Other AI projects.🤓
 - https://github.com/Djdefrag/QualityScaler / QualityScaler - image/video AI upscaler app
-- https://github.com/Djdefrag/FluidFrames.RIFE / FluidFrames.RIFE - video AI interpolation app (RIFE-HDv3)
+- https://github.com/Djdefrag/FluidFrames / FluidFrames - video AI interpolation app
 
 ## Credits.
 Real-ESRGAN - https://github.com/xinntao/Real-ESRGAN
@@ -37,9 +37,9 @@ RealScaler is completely written in Python, from backend to frontend.
 
 ## Make it work by yourself. 👨‍💻
 Prerequisites.
-- Python installed on your pc (https://www.python.org/downloads/release/python-3119/)
+- Python installed on your pc (https://www.python.org/downloads/)
 - VSCode installed on your pc (https://code.visualstudio.com/)
-- AI models downloaded (https://gofile.io/d/iQi5Tb)
+- AI models downloaded (https://gofile.io/d/oatXWD)
 - FFMPEG.exe downloaded (https://www.gyan.dev/ffmpeg/builds/) RELEASE BUILD > ffmpeg-release-essentials.7z
 
 Getting started.
